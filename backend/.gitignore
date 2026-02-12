@@ -1,0 +1,24 @@
+# .gitignore
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media
+staticfiles
+
+# Environment variables (SEGURANÇA MÁXIMA AQUI)
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+.DS_Store
