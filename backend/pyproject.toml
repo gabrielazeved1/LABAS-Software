@@ -1,22 +1,22 @@
 [project]
-name = "analise-solo-backend"
+name = "backend"
 version = "0.1.0"
-description = ""
+description = "API e sistema de gestão para análise de solos e sementes (LABAS)"
 authors = [
-    {name = "Gabriel Azevedo",email = "g.azevedo0121@gmail.com"}
+    {name = "Gabriel Azevedo", email = "g.azevedo0121@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
 dependencies = [
     "django (<6.0)",
     "python-decouple (>=3.8,<4.0)",
-    "weasyprint (>=68.1,<69.0)"
+    "weasyprint (>=68.1,<69.0)",
+    "djangorestframework (>=3.16.1,<4.0.0)",
+    "djangorestframework-simplejwt (>=5.5.1,<6.0.0)"
 ]
 
-
-[build-system]
-requires = ["poetry-core>=2.0.0,<3.0.0"]
-build-backend = "poetry.core.masonry.api"
+[tool.poetry]
+package-mode = false
 
 [tool.poetry.group.dev.dependencies]
 black = "^26.1.0"
@@ -24,3 +24,6 @@ isort = "^7.0.0"
 taskipy = "^1.14.1"
 pytest = "^9.0.2"
 
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
