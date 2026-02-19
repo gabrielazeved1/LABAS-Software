@@ -6,8 +6,8 @@ from django.contrib.auth.models import User
 
 class Cliente(models.Model):
     """
-    entidade de persistencia para dados cadastrais de Clientes.
-    mantem vinculo com o sistema de autenticação (User) para controlede acesso.
+    Entidade de persistencia para dados cadastrais de Clientes.
+    Mantem vinculo com o sistema de autenticação (User) para controle de acesso.
     """
 
     nome = models.CharField(max_length=255, verbose_name="Solicitante")
@@ -39,13 +39,12 @@ class Cliente(models.Model):
 
 class AnaliseSolo(models.Model):
     """
-    modelo principal de analise de solo.
-
-    arq dos dados:
-    a ordem dos campos reflete estritamente a estrutura física do arquivo
+    Modelo principal de análise de solo.
+    A ordem dos campos reflete estritamente a estrutura física das
+    estações de trabalho/equipamentos do laboratório.
     """
 
-    # Identificacao
+    # --- 1. Identificação e Controle ---
     n_lab = models.CharField(max_length=50, unique=True, verbose_name="N Lab")
     cliente = models.ForeignKey(
         Cliente,
@@ -53,19 +52,21 @@ class AnaliseSolo(models.Model):
         related_name="analises",
         verbose_name="Código cliente",
     )
+    data_entrada = models.DateField(default=timezone.now, verbose_name="Data Entrada")
+    data_saida = models.DateField(blank=True, null=True, verbose_name="Data Saída")
 
-    # Acidez
+    # --- 2. Phagâmetro ---
     ph_agua = models.DecimalField(
         max_digits=5, decimal_places=2, verbose_name="pH água"
-    )
-    ph_kcl = models.DecimalField(
-        max_digits=5, decimal_places=2, blank=True, null=True, verbose_name="pH Kcl"
     )
     ph_cacl2 = models.DecimalField(
         max_digits=5, decimal_places=2, blank=True, null=True, verbose_name="pH Cacl2"
     )
+    ph_kcl = models.DecimalField(
+        max_digits=5, decimal_places=2, blank=True, null=True, verbose_name="pH Kcl"
+    )
 
-    # Fosforo
+    # --- 3. Espectrofotômetro ---
     p_m = models.DecimalField(
         max_digits=8, decimal_places=2, verbose_name="P_M", help_text="Mehlich"
     )
@@ -77,20 +78,57 @@ class AnaliseSolo(models.Model):
         verbose_name="P_R",
         help_text="Resina",
     )
+    p_rem = models.DecimalField(
+        max_digits=8, decimal_places=2, blank=True, null=True, verbose_name="P-rem"
+    )
+    mo = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="MO")
+    s = models.DecimalField(
+        max_digits=8, decimal_places=2, blank=True, null=True, verbose_name="S"
+    )
+    b = models.DecimalField(
+        max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="B"
+    )
 
-    # Bases
+    # --- 4. Fotômetro de Chama ---
     k = models.DecimalField(max_digits=8, decimal_places=2, verbose_name="K")
     na = models.DecimalField(
         max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="Na"
     )
+
+    # --- 5. Absorção Atômica ---
     ca = models.DecimalField(max_digits=6, decimal_places=2, verbose_name="Ca")
     mg = models.DecimalField(max_digits=6, decimal_places=2, verbose_name="Mg2+")
+    cu = models.DecimalField(
+        max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="Cu"
+    )
+    fe = models.DecimalField(
+        max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="Fe"
+    )
+    mn = models.DecimalField(
+        max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="Mn"
+    )
+    zn = models.DecimalField(
+        max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="Zn"
+    )
 
-    # Aluminio
+    # --- 6. Titulação ---
     al = models.DecimalField(max_digits=6, decimal_places=2, verbose_name="Al3+")
     h_al = models.DecimalField(max_digits=6, decimal_places=2, verbose_name="H+Al")
 
-    # Calculados (Intermediarios na Planilha)
+    # --- 7. Física do Solo (Granulometria) ---
+    areia = models.DecimalField(
+        max_digits=5, decimal_places=1, blank=True, null=True, verbose_name="Areia %"
+    )
+    argila = models.DecimalField(
+        max_digits=5, decimal_places=1, blank=True, null=True, verbose_name="Argila %"
+    )
+    silte = models.DecimalField(
+        max_digits=5, decimal_places=1, blank=True, null=True, verbose_name="Silte %"
+    )
+
+    # ==========================================
+    # --- 8. CALCULADOS (Regras de Negócio) ---
+    # ==========================================
     sb = models.DecimalField(
         max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="SB"
     )
@@ -106,34 +144,6 @@ class AnaliseSolo(models.Model):
     m = models.DecimalField(
         max_digits=5, decimal_places=1, blank=True, null=True, verbose_name="m"
     )
-
-    # posicionado na planilha na col 18
-    p_rem = models.DecimalField(
-        max_digits=8, decimal_places=2, blank=True, null=True, verbose_name="P-rem"
-    )
-
-    # enxofre e micros
-    s = models.DecimalField(
-        max_digits=8, decimal_places=2, blank=True, null=True, verbose_name="S"
-    )
-    b = models.DecimalField(
-        max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="B"
-    )
-    zn = models.DecimalField(
-        max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="Zn"
-    )
-    cu = models.DecimalField(
-        max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="Cu"
-    )
-    mn = models.DecimalField(
-        max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="Mn"
-    )
-    fe = models.DecimalField(
-        max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="Fe"
-    )
-
-    # materia Organica e Relacoes
-    mo = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="MO")
     ca_mg = models.DecimalField(
         max_digits=5, decimal_places=2, blank=True, null=True, verbose_name="Ca/Mg"
     )
@@ -145,19 +155,6 @@ class AnaliseSolo(models.Model):
     )
     c_org = models.DecimalField(
         max_digits=5, decimal_places=2, blank=True, null=True, verbose_name="C-org"
-    )
-
-    # Campos de controle
-    data_entrada = models.DateField(default=timezone.now, verbose_name="Data Entrada")
-    data_saida = models.DateField(blank=True, null=True, verbose_name="Data Saída")
-    areia = models.DecimalField(
-        max_digits=5, decimal_places=1, blank=True, null=True, verbose_name="Areia %"
-    )
-    argila = models.DecimalField(
-        max_digits=5, decimal_places=1, blank=True, null=True, verbose_name="Argila %"
-    )
-    silte = models.DecimalField(
-        max_digits=5, decimal_places=1, blank=True, null=True, verbose_name="Silte %"
     )
 
     def clean(self):
