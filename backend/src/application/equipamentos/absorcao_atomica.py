@@ -95,3 +95,92 @@ class CalculadoraAbsorcaoAtomica:
             volume_solo_cm3,
             peso_equivalente=peso_mg,
         )
+
+    def calcular_cu_disponivel(
+        self,
+        leitura_emissao: Decimal,  # F8 (Emissão/Absorbância)
+        coeficiente_angular_a: Decimal,  # L16 (Inclinação / b no Excel)
+        coeficiente_linear_b: Decimal,  # L17 (Intercepto / a no Excel)
+        volume_extrator_ml: Decimal,  # E8
+        fator_diluicao: Decimal,  # D8
+        volume_solo_cm3: Decimal,  # C8
+    ) -> Decimal:
+        """
+        Calcula o Cobre (Cu) disponível em mg/dm³.
+        Micronutrientes não precisam de conversão para cmol_c, logo o peso equivalente é 1.
+        """
+
+        peso_cu_neutro = Decimal("1")
+
+        return self._calcular_base(
+            leitura_absorvancia=leitura_emissao,
+            coeficiente_angular_a=coeficiente_angular_a,
+            coeficiente_linear_b=coeficiente_linear_b,
+            volume_extrator_ml=volume_extrator_ml,
+            fator_diluicao=fator_diluicao,
+            volume_solo_cm3=volume_solo_cm3,
+            peso_equivalente=peso_cu_neutro,
+        )
+
+    def calcular_fe_disponivel(
+        self,
+        leitura_emissao: Decimal,
+        coeficiente_angular_a: Decimal,
+        coeficiente_linear_b: Decimal,
+        volume_extrator_ml: Decimal,
+        fator_diluicao: Decimal,
+        volume_solo_cm3: Decimal,
+    ) -> Decimal:
+        """Calcula o Ferro (Fe) disponível em mg/dm³."""
+        peso_fe_neutro = Decimal("1")
+        return self._calcular_base(
+            leitura_absorvancia=leitura_emissao,
+            coeficiente_angular_a=coeficiente_angular_a,
+            coeficiente_linear_b=coeficiente_linear_b,
+            volume_extrator_ml=volume_extrator_ml,
+            fator_diluicao=fator_diluicao,
+            volume_solo_cm3=volume_solo_cm3,
+            peso_equivalente=peso_fe_neutro,
+        )
+
+    def calcular_mn_disponivel(
+        self,
+        leitura_emissao: Decimal,
+        coeficiente_angular_a: Decimal,
+        coeficiente_linear_b: Decimal,
+        volume_extrator_ml: Decimal,
+        fator_diluicao: Decimal,
+        volume_solo_cm3: Decimal,
+    ) -> Decimal:
+        """Calcula o Manganês (Mn) disponível em mg/dm³."""
+        peso_mn_neutro = Decimal("1")
+        return self._calcular_base(
+            leitura_absorvancia=leitura_emissao,
+            coeficiente_angular_a=coeficiente_angular_a,
+            coeficiente_linear_b=coeficiente_linear_b,
+            volume_extrator_ml=volume_extrator_ml,
+            fator_diluicao=fator_diluicao,
+            volume_solo_cm3=volume_solo_cm3,
+            peso_equivalente=peso_mn_neutro,
+        )
+
+    def calcular_zn_disponivel(
+        self,
+        leitura_emissao: Decimal,
+        coeficiente_angular_a: Decimal,
+        coeficiente_linear_b: Decimal,
+        volume_extrator_ml: Decimal,
+        fator_diluicao: Decimal,
+        volume_solo_cm3: Decimal,
+    ) -> Decimal:
+        """Calcula o Zinco (Zn) disponível em mg/dm³."""
+        peso_zn_neutro = Decimal("1")
+        return self._calcular_base(
+            leitura_absorvancia=leitura_emissao,
+            coeficiente_angular_a=coeficiente_angular_a,
+            coeficiente_linear_b=coeficiente_linear_b,
+            volume_extrator_ml=volume_extrator_ml,
+            fator_diluicao=fator_diluicao,
+            volume_solo_cm3=volume_solo_cm3,
+            peso_equivalente=peso_zn_neutro,
+        )
