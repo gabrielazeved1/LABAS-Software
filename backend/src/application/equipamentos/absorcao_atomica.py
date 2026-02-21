@@ -12,9 +12,18 @@ class CalculadoraAbsorcaoAtomica:
         # A curva gerada de manhã pela calibração dos padrões
         self.curva = curva_calibracao
 
+    def _descontar_branco(
+        self, leitura_bruta: Decimal, leitura_branco: Decimal
+    ) -> Decimal:
+        """
+        Executa o passo da 'Tabela de Absorção'.
+        Subtrai o branco da leitura bruta do equipamento.
+        """
+        return leitura_bruta - leitura_branco
+
     def _calcular_base(
         self,
-        leitura_absorvancia: Decimal,
+        leitura_corrigida: Decimal,
         coeficiente_angular_a: Decimal,
         coeficiente_linear_b: Decimal,
         volume_extrator_ml: Decimal,
@@ -34,7 +43,7 @@ class CalculadoraAbsorcaoAtomica:
 
         # 1. Isola o 'x' na equação da reta: x = (y - b) / a
         concentracao_extrato = (
-            leitura_absorvancia - coeficiente_linear_b
+            leitura_corrigida - coeficiente_linear_b
         ) / coeficiente_angular_a
 
         # 2. Aplica as conversões físicas e químicas
@@ -52,7 +61,8 @@ class CalculadoraAbsorcaoAtomica:
 
     def calcular_ca_disponivel(
         self,
-        leitura_absorvancia: Decimal,
+        leitura_bruta: Decimal,  # Inserido pelo técnico (Esquerda da tabela)
+        leitura_branco: Decimal,  # Branco do Ca
         coeficiente_angular_a: Decimal,
         coeficiente_linear_b: Decimal,
         volume_extrator_ml: Decimal,
@@ -61,10 +71,11 @@ class CalculadoraAbsorcaoAtomica:
     ) -> Decimal:
         """Calcula o Cálcio (Ca) disponível em cmol_c/dm³."""
 
+        leitura_corrigida = self._descontar_branco(leitura_bruta, leitura_branco)
         peso_ca = Decimal("200")
 
         return self._calcular_base(
-            leitura_absorvancia,
+            leitura_corrigida,
             coeficiente_angular_a,
             coeficiente_linear_b,
             volume_extrator_ml,
@@ -75,7 +86,8 @@ class CalculadoraAbsorcaoAtomica:
 
     def calcular_mg_disponivel(
         self,
-        leitura_absorvancia: Decimal,
+        leitura_bruta: Decimal,
+        leitura_branco: Decimal,
         coeficiente_angular_a: Decimal,
         coeficiente_linear_b: Decimal,
         volume_extrator_ml: Decimal,
@@ -84,10 +96,11 @@ class CalculadoraAbsorcaoAtomica:
     ) -> Decimal:
         """Calcula o Magnésio (Mg) disponível em cmol_c/dm³."""
 
+        leitura_corrigida = self._descontar_branco(leitura_bruta, leitura_branco)
         peso_mg = Decimal("120")
 
         return self._calcular_base(
-            leitura_absorvancia,
+            leitura_corrigida,
             coeficiente_angular_a,
             coeficiente_linear_b,
             volume_extrator_ml,
@@ -98,33 +111,33 @@ class CalculadoraAbsorcaoAtomica:
 
     def calcular_cu_disponivel(
         self,
-        leitura_emissao: Decimal,  # F8 (Emissão/Absorbância)
-        coeficiente_angular_a: Decimal,  # L16 (Inclinação / b no Excel)
-        coeficiente_linear_b: Decimal,  # L17 (Intercepto / a no Excel)
-        volume_extrator_ml: Decimal,  # E8
-        fator_diluicao: Decimal,  # D8
-        volume_solo_cm3: Decimal,  # C8
+        leitura_bruta: Decimal,
+        leitura_branco: Decimal,
+        coeficiente_angular_a: Decimal,
+        coeficiente_linear_b: Decimal,
+        volume_extrator_ml: Decimal,
+        fator_diluicao: Decimal,
+        volume_solo_cm3: Decimal,
     ) -> Decimal:
-        """
-        Calcula o Cobre (Cu) disponível em mg/dm³.
-        Micronutrientes não precisam de conversão para cmol_c, logo o peso equivalente é 1.
-        """
+        """Calcula o Cobre (Cu) disponível em mg/dm³."""
 
+        leitura_corrigida = self._descontar_branco(leitura_bruta, leitura_branco)
         peso_cu_neutro = Decimal("1")
 
         return self._calcular_base(
-            leitura_absorvancia=leitura_emissao,
-            coeficiente_angular_a=coeficiente_angular_a,
-            coeficiente_linear_b=coeficiente_linear_b,
-            volume_extrator_ml=volume_extrator_ml,
-            fator_diluicao=fator_diluicao,
-            volume_solo_cm3=volume_solo_cm3,
+            leitura_corrigida,
+            coeficiente_angular_a,
+            coeficiente_linear_b,
+            volume_extrator_ml,
+            fator_diluicao,
+            volume_solo_cm3,
             peso_equivalente=peso_cu_neutro,
         )
 
     def calcular_fe_disponivel(
         self,
-        leitura_emissao: Decimal,
+        leitura_bruta: Decimal,
+        leitura_branco: Decimal,
         coeficiente_angular_a: Decimal,
         coeficiente_linear_b: Decimal,
         volume_extrator_ml: Decimal,
@@ -132,20 +145,24 @@ class CalculadoraAbsorcaoAtomica:
         volume_solo_cm3: Decimal,
     ) -> Decimal:
         """Calcula o Ferro (Fe) disponível em mg/dm³."""
+
+        leitura_corrigida = self._descontar_branco(leitura_bruta, leitura_branco)
         peso_fe_neutro = Decimal("1")
+
         return self._calcular_base(
-            leitura_absorvancia=leitura_emissao,
-            coeficiente_angular_a=coeficiente_angular_a,
-            coeficiente_linear_b=coeficiente_linear_b,
-            volume_extrator_ml=volume_extrator_ml,
-            fator_diluicao=fator_diluicao,
-            volume_solo_cm3=volume_solo_cm3,
+            leitura_corrigida,
+            coeficiente_angular_a,
+            coeficiente_linear_b,
+            volume_extrator_ml,
+            fator_diluicao,
+            volume_solo_cm3,
             peso_equivalente=peso_fe_neutro,
         )
 
     def calcular_mn_disponivel(
         self,
-        leitura_emissao: Decimal,
+        leitura_bruta: Decimal,
+        leitura_branco: Decimal,
         coeficiente_angular_a: Decimal,
         coeficiente_linear_b: Decimal,
         volume_extrator_ml: Decimal,
@@ -153,20 +170,24 @@ class CalculadoraAbsorcaoAtomica:
         volume_solo_cm3: Decimal,
     ) -> Decimal:
         """Calcula o Manganês (Mn) disponível em mg/dm³."""
+
+        leitura_corrigida = self._descontar_branco(leitura_bruta, leitura_branco)
         peso_mn_neutro = Decimal("1")
+
         return self._calcular_base(
-            leitura_absorvancia=leitura_emissao,
-            coeficiente_angular_a=coeficiente_angular_a,
-            coeficiente_linear_b=coeficiente_linear_b,
-            volume_extrator_ml=volume_extrator_ml,
-            fator_diluicao=fator_diluicao,
-            volume_solo_cm3=volume_solo_cm3,
+            leitura_corrigida,
+            coeficiente_angular_a,
+            coeficiente_linear_b,
+            volume_extrator_ml,
+            fator_diluicao,
+            volume_solo_cm3,
             peso_equivalente=peso_mn_neutro,
         )
 
     def calcular_zn_disponivel(
         self,
-        leitura_emissao: Decimal,
+        leitura_bruta: Decimal,
+        leitura_branco: Decimal,
         coeficiente_angular_a: Decimal,
         coeficiente_linear_b: Decimal,
         volume_extrator_ml: Decimal,
@@ -174,13 +195,16 @@ class CalculadoraAbsorcaoAtomica:
         volume_solo_cm3: Decimal,
     ) -> Decimal:
         """Calcula o Zinco (Zn) disponível em mg/dm³."""
+
+        leitura_corrigida = self._descontar_branco(leitura_bruta, leitura_branco)
         peso_zn_neutro = Decimal("1")
+
         return self._calcular_base(
-            leitura_absorvancia=leitura_emissao,
-            coeficiente_angular_a=coeficiente_angular_a,
-            coeficiente_linear_b=coeficiente_linear_b,
-            volume_extrator_ml=volume_extrator_ml,
-            fator_diluicao=fator_diluicao,
-            volume_solo_cm3=volume_solo_cm3,
+            leitura_corrigida,
+            coeficiente_angular_a,
+            coeficiente_linear_b,
+            volume_extrator_ml,
+            fator_diluicao,
+            volume_solo_cm3,
             peso_equivalente=peso_zn_neutro,
         )
