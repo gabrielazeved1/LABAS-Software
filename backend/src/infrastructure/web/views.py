@@ -103,39 +103,39 @@ class LaudoDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 @authentication_classes([SessionAuthentication, JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def gerar_laudo_pdf(request, n_lab):
-    """
-    Orquestra a transformacao de dados quimicos em documento A4
-    Suporta autenticacao via token ou sessao de navegador
-    """
-    # Trata o identificador recebido para evitar erros de busca
+    # Trata o identificador recebido
     n_lab_limpo = n_lab.strip("/")
-
-    # Localiza o registro alvo ou retorna erro padronizado
     laudo_foco = get_object_or_404(AnaliseSolo, n_lab=n_lab_limpo)
 
-    # Verifica se o solicitante possui autoridade sobre o laudo
+    # Validacao de seguranca para acesso ao laudo
     if not (request.user.is_staff or laudo_foco.cliente.usuario == request.user):
         return Response(
             {"detail": "Acesso negado Este laudo nao pertence a voce"},
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    # Coleta historico recente para compor o quadro comparativo do laudo
-    analises = AnaliseSolo.objects.filter(cliente=laudo_foco.cliente).order_by(
-        "-data_entrada"
-    )[:5]
+    # Coleta as analises do banco de dados limitado a cinco registros
+    analises_reais = list(
+        AnaliseSolo.objects.filter(cliente=laudo_foco.cliente).order_by(
+            "-data_entrada"
+        )[:5]
+    )
 
-    # Prepara o conjunto de dados para o motor de template
+    # Injeta valores nulos para completar a lista de cinco posicoes para o layout
+    # Isso permite que o html identifique onde deve riscar a linha
+    analises_preparadas = analises_reais + [None] * (5 - len(analises_reais))
+
     context = {
         "cliente": laudo_foco.cliente,
-        "analises": analises,
+        "analises": analises_preparadas,
+        "laudo_foco": laudo_foco,
     }
 
-    # Processa o HTML e converte para fluxo de bytes PDF
+    # Processamento do documento via motor WeasyPrint
     html_string = render_to_string("laudos/modelo_oficial.html", context)
     pdf = HTML(string=html_string, base_url=request.build_absolute_uri("/")).write_pdf()
 
-    # Configura o cabecalho de resposta para visualizacao direta no navegador
+    # Configuracao do cabecalho de resposta do arquivo binario
     response = HttpResponse(pdf, content_type="application/pdf")
     nome_arquivo = f"relatorio_{laudo_foco.n_lab.replace('/', '-')}.pdf"
     response["Content-Disposition"] = f'inline; filename="{nome_arquivo}"'

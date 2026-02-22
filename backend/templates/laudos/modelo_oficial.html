@@ -1,204 +1,254 @@
+{% load static %}
 <!doctype html>
 <html lang="pt-br">
   <head>
     <meta charset="UTF-8" />
-    <style>
-      @page {
-        size: A4;
-        margin: 1cm;
-      }
-      body {
-        font-family: Arial, sans-serif;
-        font-size: 10px;
-        line-height: 1.2;
-        color: #000;
-      }
-      .header {
-        text-align: center;
-        margin-bottom: 10px;
-        border-bottom: 1px solid #000;
-        padding-bottom: 5px;
-      }
-      .header h1 {
-        font-size: 14px;
-        margin: 0;
-      }
-      .header p {
-        margin: 2px 0;
-        font-size: 9px;
-      }
-
-      .info-table {
-        width: 100%;
-        margin-bottom: 15px;
-        border: none;
-      }
-      .info-table td {
-        padding: 2px;
-        vertical-align: top;
-      }
-
-      .results-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 10px;
-        text-align: center;
-      }
-      .results-table th,
-      .results-table td {
-        border: 1px solid #000;
-        padding: 4px;
-        font-size: 9px;
-      }
-      .results-table th {
-        background-color: #f2f2f2;
-      }
-
-      .footer-box {
-        border: 1px solid #000;
-        padding: 8px;
-        margin-top: 10px;
-        font-size: 8.5px;
-      }
-      .footer-box p {
-        margin: 3px 0;
-      }
-      .highlight {
-        font-weight: bold;
-        text-align: center;
-        display: block;
-        margin-bottom: 5px;
-      }
-    </style>
+    <link rel="stylesheet" href="{% static 'css/laudo_estilo.css' %}" />
   </head>
-  <body>
-    <div class="header">
-      <h1>Universidade Federal de Uberlândia</h1>
-      <p>
-        Instituto de Ciências Agrárias | LABAS - Laboratório de Análise de Solo
-        e Tecido Vegetal
-      </p>
-      <p>
-        Avenida Amazonas, S/N. Campus Umuarama-Bloco 4C; Sala 102 | CEP
-        38400-734
-      </p>
-      <p>Contato: 34 3225 8665 | labas.solo@gmail.com</p>
-    </div>
 
-    <table class="info-table">
+  <body>
+    <!-- CABEÇALHO -->
+    <table class="header-table">
       <tr>
-        <td><strong>Solicitante:</strong> {{ cliente.nome }}</td>
-        <td>
-          <strong>Entrada:</strong> {{ analises.0.data_entrada|date:"d/m/Y" }}
+        <td class="logo-col">
+          <img src="{% static 'ufu.png' %}" class="logo-img" />
         </td>
-      </tr>
-      <tr>
-        <td>
-          <strong>Fazenda:</strong> {{ cliente.area|default:"-" }} ({{
-          cliente.municipio }})
+
+        <td class="text-col">
+          <div class="header-text">
+            <h1>Universidade Federal de Uberlândia</h1>
+            <h2>Instituto de Ciências Agrárias</h2>
+            <p>Avenida Amazonas, S/N. Campus Umuarama-Bloco 4C; Sala102</p>
+            <p>Uberlândia-Minas Gerais. CEP 38400-734</p>
+            <p>34 3225 8665 e 34 9 9864 8665 | labas.solo@gmail.com</p>
+            <span class="lab-title">
+              Laboratório de Análise de Solo e Tecido Vegetal (LABAS)
+            </span>
+          </div>
         </td>
-        <td>
-          <strong>Saída:</strong> {{
-          analises.0.data_saida|date:"d/m/Y"|default:"Em processamento" }}
+
+        <td class="logo-col" style="text-align: right">
+          <img src="{% static 'labas.png' %}" class="logo-img" />
         </td>
-      </tr>
-      <tr>
-        <td><strong>Contato:</strong> {{ cliente.contato|default:"-" }}</td>
-        <td><strong>Resultados de Análise Química de Solo</strong></td>
       </tr>
     </table>
 
+    <!-- DADOS DO CLIENTE -->
+    <table class="info-table">
+      <tr>
+        <td class="label-cell">Solicitante:</td>
+        <td style="width: 38%">{{ cliente.nome }}</td>
+
+        <td class="label-cell">Entrada:</td>
+        <td style="width: 12%">{{ laudo_foco.data_entrada|date:"d/m/Y" }}</td>
+
+        <td class="label-cell">Saída:</td>
+        <td style="width: 12%">
+          {{ laudo_foco.data_saida|date:"d/m/Y"|default:"-" }}
+        </td>
+      </tr>
+
+      <tr>
+        <td class="label-cell">Obs:</td>
+        <td colspan="5">
+          {% if laudo_foco.observacoes %} {{ laudo_foco.observacoes }} {% else
+          %}
+          ------------------------------------------------------------------------------------------------
+          {% endif %}
+        </td>
+      </tr>
+
+      <tr>
+        <td class="label-cell">Contato:</td>
+        <td>{{ cliente.usuario.email }}</td>
+
+        <td class="label-cell">Área:</td>
+        <td colspan="3">
+          {{ cliente.area|default:"-" }} ({{ cliente.municipio }})
+        </td>
+      </tr>
+    </table>
+
+    <!-- TÍTULO -->
+    <div
+      style="
+        text-align: center;
+        font-weight: bold;
+        margin-bottom: 5px;
+        font-size: 11px;
+      "
+    >
+      RESULTADOS DE ANÁLISE QUÍMICA DE SOLO
+    </div>
+
+    <!-- TABELA 1 -->
     <table class="results-table">
       <thead>
-        <tr>
-          <th>N Lab</th>
-          <th>Ref. Cliente</th>
-          <th>pH H₂O</th>
-          <th>P Mehlich</th>
+        <tr class="header-gray">
+          <th rowspan="2" style="width: 8%">N Lab</th>
+          <th rowspan="2">Referência Cliente</th>
+          <th colspan="3">pH</th>
+          <th>P-M1</th>
+          <th>P-Res</th>
+          <th>P-rem</th>
           <th>K</th>
           <th>Na</th>
-          <th>Ca</th>
+          <th>S</th>
+          <th>B</th>
         </tr>
-        <tr>
-          <th></th>
-          <th></th>
-          <th>(1:2.5)</th>
-          <th>mg/dm³</th>
-          <th>mg/dm³</th>
-          <th>mg/dm³</th>
-          <th>cmol/dm³</th>
+
+        <tr class="header-gray">
+          <th>água</th>
+          <th>KCl</th>
+          <th>CaCl₂</th>
+          <th colspan="2" class="unit-text">mg/dm³</th>
+          <th class="unit-text">mg/L</th>
+          <th colspan="4" class="unit-text">mg/dm³</th>
         </tr>
       </thead>
+
       <tbody>
-        {% for item in analises|slice:":5" %}
+        {% for item in analises %} {% if item %}
         <tr>
           <td>{{ item.n_lab }}</td>
           <td>{{ item.referencia|default:"-" }}</td>
           <td>{{ item.ph_agua }}</td>
+          <td>{{ item.ph_kcl }}</td>
+          <td>{{ item.ph_cacl2 }}</td>
           <td>{{ item.p_m }}</td>
+          <td>{{ item.p_r }}</td>
+          <td>{{ item.p_rem }}</td>
           <td>{{ item.k }}</td>
           <td>{{ item.na }}</td>
-          <td>{{ item.ca }}</td>
+          <td>{{ item.s }}</td>
+          <td>{{ item.b }}</td>
         </tr>
-        {% endfor %}
+        {% else %}
+        <tr class="row-void">
+          <td colspan="12"></td>
+        </tr>
+        {% endif %} {% endfor %}
       </tbody>
     </table>
 
+    <!-- TABELA 2 -->
     <table class="results-table">
       <thead>
-        <tr>
-          <th>N Lab</th>
-          <th>Mg²⁺</th>
-          <th>Al³⁺</th>
+        <tr class="header-gray">
+          <th rowspan="2" style="width: 8%">N Lab</th>
+          <th>Ca</th>
+          <th>Mg</th>
+          <th>Al</th>
           <th>H+Al</th>
-          <th>SB</th>
-          <th>t</th>
-          <th>T</th>
-          <th>C-org</th>
-          <th>V%</th>
-          <th>m%</th>
+          <th>Cu</th>
+          <th>Fe</th>
+          <th>Mn</th>
+          <th>Zn</th>
         </tr>
-        <tr>
-          <th></th>
-          <th colspan="6">cmol/dm³</th>
-          <th>dag/kg</th>
-          <th>%</th>
-          <th>%</th>
+
+        <tr class="header-gray">
+          <th colspan="4" class="unit-text">cmolc/dm³</th>
+          <th colspan="4" class="unit-text">mg/dm³</th>
         </tr>
       </thead>
+
       <tbody>
-        {% for item in analises|slice:":5" %}
+        {% for item in analises %} {% if item %}
         <tr>
           <td>{{ item.n_lab }}</td>
+          <td>{{ item.ca }}</td>
           <td>{{ item.mg }}</td>
           <td>{{ item.al }}</td>
           <td>{{ item.h_al }}</td>
-          <td>{{ item.sb }}</td>
-          <td>{{ item.t }}</td>
-          <td>{{ item.T_maiusculo }}</td>
-          <td>{{ item.c_org }}</td>
-          <td>{{ item.V }}</td>
-          <td>{{ item.m }}</td>
+          <td>{{ item.cu }}</td>
+          <td>{{ item.fe }}</td>
+          <td>{{ item.mn }}</td>
+          <td>{{ item.zn }}</td>
         </tr>
-        {% endfor %}
+        {% else %}
+        <tr class="row-void">
+          <td colspan="9"></td>
+        </tr>
+        {% endif %} {% endfor %}
       </tbody>
     </table>
 
-    <div class="footer-box">
-      <span class="highlight"
-        >O LABAS não recomenda corretivos ou fertilizantes!
-      </span>
-      <p>
-        <strong>Metodologia:</strong> pH em água (1:2.5)[cite: 21]; P, Na, K,
-        Fe, Zn, Mn, Cu - Extrator Mehlich-1[cite: 22]; Ca²⁺, Mg²⁺ e Al³⁺ -
-        Extrator KCl 1,0 mol/L[cite: 23, 24].
-      </p>
-      <p>
-        <strong>Fórmulas:</strong> $SB = Ca + Mg + K + Na$[cite: 29]; $t = SB +
-        Al$ (CTC Efetiva)[cite: 26, 27]; $T = SB + (H+Al)$ (CTC pH 7.0)[cite:
-        28]; $V = (100 \times SB) / T$[cite: 31]; $m = (100 \times Al) /
-        t$[cite: 30].
-      </p>
+    <!-- TABELA 3 -->
+    <table class="results-table">
+      <thead>
+        <tr class="header-gray">
+          <th rowspan="2" style="width: 8%">N Lab</th>
+          <th>SB</th>
+          <th>t</th>
+          <th>T</th>
+          <th>V%</th>
+          <th>m%</th>
+          <th>M.O.</th>
+          <th>C-org</th>
+          <th>Ca/Mg</th>
+          <th>Ca/K</th>
+          <th>Mg/K</th>
+        </tr>
+
+        <tr class="header-gray">
+          <th colspan="3" class="unit-text">cmolc/dm³</th>
+          <th colspan="2" class="unit-text">%</th>
+          <th colspan="2" class="unit-text">dag/kg</th>
+          <th colspan="3"></th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for item in analises %} {% if item %}
+        <tr>
+          <td>{{ item.n_lab }}</td>
+          <td>{{ item.sb }}</td>
+          <td>{{ item.t }}</td>
+          <td>{{ item.T_maiusculo }}</td>
+          <td>{{ item.V }}</td>
+          <td>{{ item.m }}</td>
+          <td>{{ item.mo }}</td>
+          <td>{{ item.c_org }}</td>
+          <td>{{ item.ca_mg }}</td>
+          <td>{{ item.ca_k }}</td>
+          <td>{{ item.mg_k }}</td>
+        </tr>
+        {% else %}
+        <tr class="row-void">
+          <td colspan="11"></td>
+        </tr>
+        {% endif %} {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- RODAPÉ -->
+    <div class="footer-section">
+      <div class="footer-obs">
+        Obs: "O LABAS não recomenda corretivos ou fertilizantes!"
+      </div>
+
+      <div class="footer-border-box">
+        <table class="footer-columns">
+          <tr>
+            <td>
+              • pH em água, KCl ou CaCl₂, relação 1/2.5<br />
+              • P, Na, K, Fe, Zn, Mn, Cu - Extrator Mehlich-1<br />
+              • Ca²⁺, Mg²⁺ e Al³⁺ (Extrator KCl 1,0 mol/L)<br />
+              • H+Al (acidez potencial)<br />
+              • t = capacidade de troca catiônica efetiva (t=SB+Al)<br />
+              • T = capacidade de troca catiônica a pH 7,0<br />
+              • SB = soma de bases trocáveis (Ca, Mg, K e Na)
+            </td>
+
+            <td>
+              • m = saturação de Al³⁺ na CTC efetiva (m= 100 × Al/t)<br />
+              • V = saturação por bases na CTC potencial (V= 100 × SB/T)<br />
+              • MO (Matéria Orgânica) - Método Colorimétrico<br />
+              • S = fosfato monocálcico
+            </td>
+          </tr>
+        </table>
+      </div>
     </div>
   </body>
 </html>

@@ -1,0 +1,171 @@
+/* ========================================= */
+/* CONFIGURAÇÃO DE PÁGINA A4 */
+/* ========================================= */
+
+@page {
+  size: A4;
+  margin: 0.5cm; /* margem reduzida para caber em 1 página */
+}
+
+body {
+  font-family: Arial, sans-serif;
+  font-size: 9px;
+  line-height: 1.15;
+  color: #000;
+  margin: 0;
+}
+
+/* ========================================= */
+/* CABEÇALHO */
+/* ========================================= */
+
+.header-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-bottom: 2px solid #000;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+}
+
+.logo-col {
+  width: 15%;
+  vertical-align: middle;
+}
+
+.text-col {
+  width: 70%;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.logo-img {
+  width: 95px; /* levemente reduzido */
+  height: auto;
+}
+
+.header-text h1 {
+  font-size: 13px;
+  margin: 0;
+  font-weight: bold;
+}
+
+.header-text h2 {
+  font-size: 11px;
+  margin: 2px 0;
+}
+
+.header-text p {
+  margin: 1px 0;
+  font-size: 8.5px;
+}
+
+.lab-title {
+  font-size: 12px;
+  font-weight: bold;
+  display: block;
+  margin-top: 4px;
+  letter-spacing: 0.2px;
+}
+
+/* ========================================= */
+/* TABELA DE INFORMAÇÕES */
+/* ========================================= */
+
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 10px;
+}
+
+.info-table td {
+  border: 1px solid #000;
+  padding: 4px;
+  font-size: 9px;
+}
+
+.label-cell {
+  font-weight: bold;
+  background-color: #f2f2f2;
+  width: 12%;
+}
+
+/* ========================================= */
+/* TABELAS DE RESULTADOS */
+/* ========================================= */
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+  margin-bottom: 12px;
+  table-layout: fixed;
+}
+
+/* 🔥 AUMENTO DA ALTURA DAS LINHAS */
+.results-table tbody tr {
+  height: 30px; /* antes era 26px */
+}
+
+/* Garantir que as colunas fechem perfeitamente */
+.results-table th,
+.results-table td {
+  border: 1px solid #000;
+  padding: 5px;
+  vertical-align: middle;
+  font-size: 9px;
+}
+
+/* Cabeçalho */
+.results-table thead th {
+  font-size: 9.8px;
+  font-weight: bold;
+}
+
+/* Faz a tabela ocupar todo o espaço vertical disponível */
+.results-table tbody {
+  height: 100%;
+}
+/* ========================================= */
+/* LINHAS SEM DADOS */
+/* ========================================= */
+
+.row-void td {
+  background-image: linear-gradient(
+    transparent 48%,
+    #bbb 49%,
+    #bbb 51%,
+    transparent 52%
+  );
+}
+
+/* ========================================= */
+/* RODAPÉ */
+/* ========================================= */
+
+.footer-section {
+  margin-top: 12px;
+  width: 100%;
+}
+
+.footer-obs {
+  font-weight: bold;
+  margin-bottom: 6px;
+  font-size: 9.5px;
+}
+
+.footer-border-box {
+  border: 1px solid #000;
+  padding: 8px;
+}
+
+.footer-columns {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.footer-columns td {
+  width: 50%;
+  vertical-align: top;
+  font-size: 8.5px;
+  line-height: 1.4;
+}
