@@ -3,9 +3,9 @@ from decimal import Decimal
 
 class CalculadoraTitulacao:
     """
-    Motor de cálculo para os elementos obtidos por Titulação/Volumetria:
-    Acidez Trocável (Al3+) e Acidez Potencial (H+Al).
-    Regra do Laboratório: Subtração direta do valor do Branco.
+    Motor de calculo para os elementos obtidos por Titulacao/Volumetria:
+    Acidez Trocavel (Al3+) e Acidez Potencial (H+Al).
+    Regra padrao do laboratorio: Subtracao direta do valor do Branco.
     """
 
     def calcular_aluminio(
@@ -14,12 +14,13 @@ class CalculadoraTitulacao:
         leitura_branco: Decimal,  # Valor do Branco
     ) -> Decimal:
         """
-        Calcula o Alumínio (Al3+) em cmolc/dm³.
-        Fórmula: Leitura da Amostra - Leitura do Branco
+        Calcula o Aluminio (Al3+) em cmolc/dm3.
+        Formula: Leitura da Amostra - Leitura do Branco
         """
         resultado = leitura_amostra - leitura_branco
 
-        # Trava Agronômica: Não existe alumínio/acidez negativa no solo.
+        # Trava Agronomica de seguranca: Nao existe aluminio/acidez negativa no solo.
+        # Caso a leitura seja menor que o branco, o valor disponivel e assumido como zero.
         if resultado < Decimal("0"):
             resultado = Decimal("0")
 
@@ -31,11 +32,12 @@ class CalculadoraTitulacao:
         leitura_branco: Decimal,  # Valor do Branco
     ) -> Decimal:
         """
-        Calcula a Acidez Potencial (H+Al) em cmolc/dm³.
-        Fórmula: Leitura da Amostra - Leitura do Branco
+        Calcula a Acidez Potencial (H+Al) em cmolc/dm3.
+        Formula: Leitura da Amostra - Leitura do Branco
         """
         resultado = leitura_amostra - leitura_branco
 
+        # Trava Agronomica de seguranca garantindo que a acidez potencial nunca seja negativa
         if resultado < Decimal("0"):
             resultado = Decimal("0")
 
