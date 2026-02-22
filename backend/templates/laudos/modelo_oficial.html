@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <style>
+      @page {
+        size: A4;
+        margin: 1cm;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 10px;
+        line-height: 1.2;
+        color: #000;
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #000;
+        padding-bottom: 5px;
+      }
+      .header h1 {
+        font-size: 14px;
+        margin: 0;
+      }
+      .header p {
+        margin: 2px 0;
+        font-size: 9px;
+      }
+
+      .info-table {
+        width: 100%;
+        margin-bottom: 15px;
+        border: none;
+      }
+      .info-table td {
+        padding: 2px;
+        vertical-align: top;
+      }
+
+      .results-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      .results-table th,
+      .results-table td {
+        border: 1px solid #000;
+        padding: 4px;
+        font-size: 9px;
+      }
+      .results-table th {
+        background-color: #f2f2f2;
+      }
+
+      .footer-box {
+        border: 1px solid #000;
+        padding: 8px;
+        margin-top: 10px;
+        font-size: 8.5px;
+      }
+      .footer-box p {
+        margin: 3px 0;
+      }
+      .highlight {
+        font-weight: bold;
+        text-align: center;
+        display: block;
+        margin-bottom: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>Universidade Federal de Uberlândia</h1>
+      <p>
+        Instituto de Ciências Agrárias | LABAS - Laboratório de Análise de Solo
+        e Tecido Vegetal
+      </p>
+      <p>
+        Avenida Amazonas, S/N. Campus Umuarama-Bloco 4C; Sala 102 | CEP
+        38400-734
+      </p>
+      <p>Contato: 34 3225 8665 | labas.solo@gmail.com</p>
+    </div>
+
+    <table class="info-table">
+      <tr>
+        <td><strong>Solicitante:</strong> {{ cliente.nome }}</td>
+        <td>
+          <strong>Entrada:</strong> {{ analises.0.data_entrada|date:"d/m/Y" }}
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <strong>Fazenda:</strong> {{ cliente.area|default:"-" }} ({{
+          cliente.municipio }})
+        </td>
+        <td>
+          <strong>Saída:</strong> {{
+          analises.0.data_saida|date:"d/m/Y"|default:"Em processamento" }}
+        </td>
+      </tr>
+      <tr>
+        <td><strong>Contato:</strong> {{ cliente.contato|default:"-" }}</td>
+        <td><strong>Resultados de Análise Química de Solo</strong></td>
+      </tr>
+    </table>
+
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>N Lab</th>
+          <th>Ref. Cliente</th>
+          <th>pH H₂O</th>
+          <th>P Mehlich</th>
+          <th>K</th>
+          <th>Na</th>
+          <th>Ca</th>
+        </tr>
+        <tr>
+          <th></th>
+          <th></th>
+          <th>(1:2.5)</th>
+          <th>mg/dm³</th>
+          <th>mg/dm³</th>
+          <th>mg/dm³</th>
+          <th>cmol/dm³</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in analises|slice:":5" %}
+        <tr>
+          <td>{{ item.n_lab }}</td>
+          <td>{{ item.referencia|default:"-" }}</td>
+          <td>{{ item.ph_agua }}</td>
+          <td>{{ item.p_m }}</td>
+          <td>{{ item.k }}</td>
+          <td>{{ item.na }}</td>
+          <td>{{ item.ca }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>N Lab</th>
+          <th>Mg²⁺</th>
+          <th>Al³⁺</th>
+          <th>H+Al</th>
+          <th>SB</th>
+          <th>t</th>
+          <th>T</th>
+          <th>C-org</th>
+          <th>V%</th>
+          <th>m%</th>
+        </tr>
+        <tr>
+          <th></th>
+          <th colspan="6">cmol/dm³</th>
+          <th>dag/kg</th>
+          <th>%</th>
+          <th>%</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in analises|slice:":5" %}
+        <tr>
+          <td>{{ item.n_lab }}</td>
+          <td>{{ item.mg }}</td>
+          <td>{{ item.al }}</td>
+          <td>{{ item.h_al }}</td>
+          <td>{{ item.sb }}</td>
+          <td>{{ item.t }}</td>
+          <td>{{ item.T_maiusculo }}</td>
+          <td>{{ item.c_org }}</td>
+          <td>{{ item.V }}</td>
+          <td>{{ item.m }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <div class="footer-box">
+      <span class="highlight"
+        >O LABAS não recomenda corretivos ou fertilizantes!
+      </span>
+      <p>
+        <strong>Metodologia:</strong> pH em água (1:2.5)[cite: 21]; P, Na, K,
+        Fe, Zn, Mn, Cu - Extrator Mehlich-1[cite: 22]; Ca²⁺, Mg²⁺ e Al³⁺ -
+        Extrator KCl 1,0 mol/L[cite: 23, 24].
+      </p>
+      <p>
+        <strong>Fórmulas:</strong> $SB = Ca + Mg + K + Na$[cite: 29]; $t = SB +
+        Al$ (CTC Efetiva)[cite: 26, 27]; $T = SB + (H+Al)$ (CTC pH 7.0)[cite:
+        28]; $V = (100 \times SB) / T$[cite: 31]; $m = (100 \times Al) /
+        t$[cite: 30].
+      </p>
+    </div>
+  </body>
+</html>

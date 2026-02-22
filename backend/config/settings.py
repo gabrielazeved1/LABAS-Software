@@ -15,7 +15,8 @@ SECRET_KEY = "django-insecure-_k-e%nff-03*q@r=7ausi!a*^h32)fsnirnv^buvu06w+v)!j4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# Permitir acesso via 127.0.0.1 e localhost para testes
+ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
 
 
 # Application definition
@@ -35,7 +36,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",  # Deve ser o primeiro para interceptar requests
+    "corsheaders.middleware.CorsMiddleware",  # Deve ser o primeiro
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -47,13 +48,15 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "config.urls"
 
+# Bloco TEMPLATES consolidado (removida a duplicata)
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],  # Configurado para encontrar os laudos HTML
+        "DIRS": [BASE_DIR / "templates"],  # Onde moram os laudos HTML
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
@@ -90,22 +93,25 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
+        # JWT para o App Mobile/Frontend
         "rest_framework_simplejwt.authentication.JWTAuthentication",
+        # Session para permitir testes diretos no navegador via Django Admin
+        "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
-    # 1. Paginacao: Evita sobrecarga de dados no app
+    # 1. Paginacao: Evita sobrecarga de dados
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 10,
-    # 2. Throttling: Protecao contra ataques ou uso excessivo
+    # 2. Throttling: Protecao contra uso excessivo
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/day",  # Visitantes
-        "user": "1000/hour",  # Usuarios logados
+        "anon": "100/day",
+        "user": "1000/hour",
     },
 }
 
@@ -115,20 +121,20 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-# Configura CORS para permitir conexoes do seu futuro Frontend/App
+# Configura CORS para permitir conexões externas
 CORS_ALLOW_ALL_ORIGINS = True
 
-# Internationalization
+# Internacionalização
 LANGUAGE_CODE = "pt-br"
 TIME_ZONE = "America/Sao_Paulo"
 USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
+# Arquivos Estáticos (CSS, JS, Imagens)
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Default primary key field type
+# Tipo de ID padrão
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
