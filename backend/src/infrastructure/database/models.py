@@ -36,8 +36,7 @@ class Cliente(models.Model):
 class AnaliseSolo(models.Model):
     """
     Entidade central do sistema (O Laudo).
-    Armazena todos os macronutrientes, micronutrientes, atributos fisicos
-    e as relacoes agronomicas calculadas pelo Use Case.
+    Atributos agora possuem default=0 para evitar erros matematicos e nulos na API.
     """
 
     n_lab = models.CharField(max_length=50, unique=True, verbose_name="N Lab")
@@ -49,19 +48,35 @@ class AnaliseSolo(models.Model):
 
     # [PHMETRO] Atributos de Acidez Ativa
     ph_agua = models.DecimalField(
-        max_digits=8, decimal_places=4, blank=True, null=True, verbose_name="pH agua"
+        max_digits=8,
+        decimal_places=4,
+        default=0,
+        blank=True,
+        null=True,
+        verbose_name="pH agua",
     )
     ph_cacl2 = models.DecimalField(
-        max_digits=8, decimal_places=4, blank=True, null=True, verbose_name="pH CaCl2"
+        max_digits=8,
+        decimal_places=4,
+        default=0,
+        blank=True,
+        null=True,
+        verbose_name="pH CaCl2",
     )
     ph_kcl = models.DecimalField(
-        max_digits=8, decimal_places=4, blank=True, null=True, verbose_name="pH KCl"
+        max_digits=8,
+        decimal_places=4,
+        default=0,
+        blank=True,
+        null=True,
+        verbose_name="pH KCl",
     )
 
     # [ESPECTROFOTOMETRO] Elementos de Extracao Otica
     p_m = models.DecimalField(
         max_digits=12,
         decimal_places=4,
+        default=0,
         blank=True,
         null=True,
         verbose_name="P_M (Mehlich)",
@@ -69,16 +84,23 @@ class AnaliseSolo(models.Model):
     p_r = models.DecimalField(
         max_digits=12,
         decimal_places=4,
+        default=0,
         blank=True,
         null=True,
         verbose_name="P_R (Resina)",
     )
     p_rem = models.DecimalField(
-        max_digits=12, decimal_places=4, blank=True, null=True, verbose_name="P-rem"
+        max_digits=12,
+        decimal_places=4,
+        default=0,
+        blank=True,
+        null=True,
+        verbose_name="P-rem",
     )
     mo = models.DecimalField(
         max_digits=10,
         decimal_places=4,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Materia Organica",
@@ -86,18 +108,25 @@ class AnaliseSolo(models.Model):
     s = models.DecimalField(
         max_digits=12,
         decimal_places=4,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Enxofre (S)",
     )
     b = models.DecimalField(
-        max_digits=10, decimal_places=4, blank=True, null=True, verbose_name="Boro (B)"
+        max_digits=10,
+        decimal_places=4,
+        default=0,
+        blank=True,
+        null=True,
+        verbose_name="Boro (B)",
     )
 
     # [FOTOMETRO DE CHAMA] Emissao Direta
     k = models.DecimalField(
         max_digits=12,
         decimal_places=4,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Potassio (K)",
@@ -105,6 +134,7 @@ class AnaliseSolo(models.Model):
     na = models.DecimalField(
         max_digits=10,
         decimal_places=4,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Sodio (Na)",
@@ -114,6 +144,7 @@ class AnaliseSolo(models.Model):
     ca = models.DecimalField(
         max_digits=12,
         decimal_places=4,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Calcio (Ca)",
@@ -121,6 +152,7 @@ class AnaliseSolo(models.Model):
     mg = models.DecimalField(
         max_digits=12,
         decimal_places=4,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Magnesio (Mg)",
@@ -128,6 +160,7 @@ class AnaliseSolo(models.Model):
     cu = models.DecimalField(
         max_digits=12,
         decimal_places=4,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Cobre (Cu)",
@@ -135,6 +168,7 @@ class AnaliseSolo(models.Model):
     fe = models.DecimalField(
         max_digits=12,
         decimal_places=4,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Ferro (Fe)",
@@ -142,6 +176,7 @@ class AnaliseSolo(models.Model):
     mn = models.DecimalField(
         max_digits=12,
         decimal_places=4,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Manganes (Mn)",
@@ -149,6 +184,7 @@ class AnaliseSolo(models.Model):
     zn = models.DecimalField(
         max_digits=12,
         decimal_places=4,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Zinco (Zn)",
@@ -158,6 +194,7 @@ class AnaliseSolo(models.Model):
     al = models.DecimalField(
         max_digits=10,
         decimal_places=4,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Aluminio (Al3+)",
@@ -165,6 +202,7 @@ class AnaliseSolo(models.Model):
     h_al = models.DecimalField(
         max_digits=10,
         decimal_places=4,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Acidez Potencial (H+Al)",
@@ -172,22 +210,43 @@ class AnaliseSolo(models.Model):
 
     # Granulometria Fisica
     areia = models.DecimalField(
-        max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="Areia %"
+        max_digits=6,
+        decimal_places=2,
+        default=0,
+        blank=True,
+        null=True,
+        verbose_name="Areia %",
     )
     argila = models.DecimalField(
-        max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="Argila %"
+        max_digits=6,
+        decimal_places=2,
+        default=0,
+        blank=True,
+        null=True,
+        verbose_name="Argila %",
     )
     silte = models.DecimalField(
-        max_digits=6, decimal_places=2, blank=True, null=True, verbose_name="Silte %"
+        max_digits=6,
+        decimal_places=2,
+        default=0,
+        blank=True,
+        null=True,
+        verbose_name="Silte %",
     )
 
     # Relacoes Agronomicas (Processadas pelo Use Case)
     sb = models.DecimalField(
-        max_digits=10, decimal_places=2, blank=True, null=True, verbose_name="SB"
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        blank=True,
+        null=True,
+        verbose_name="SB",
     )
     t = models.DecimalField(
         max_digits=10,
         decimal_places=2,
+        default=0,
         blank=True,
         null=True,
         verbose_name="t (CTC Efetiva)",
@@ -195,6 +254,7 @@ class AnaliseSolo(models.Model):
     T_maiusculo = models.DecimalField(
         max_digits=10,
         decimal_places=2,
+        default=0,
         blank=True,
         null=True,
         verbose_name="T (CTC pH 7.0)",
@@ -202,6 +262,7 @@ class AnaliseSolo(models.Model):
     V = models.DecimalField(
         max_digits=6,
         decimal_places=1,
+        default=0,
         blank=True,
         null=True,
         verbose_name="V% (Saturacao por Bases)",
@@ -209,6 +270,7 @@ class AnaliseSolo(models.Model):
     m = models.DecimalField(
         max_digits=6,
         decimal_places=1,
+        default=0,
         blank=True,
         null=True,
         verbose_name="m% (Saturacao por Al)",
@@ -216,6 +278,7 @@ class AnaliseSolo(models.Model):
     ca_mg = models.DecimalField(
         max_digits=8,
         decimal_places=2,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Relacao Ca/Mg",
@@ -223,6 +286,7 @@ class AnaliseSolo(models.Model):
     ca_k = models.DecimalField(
         max_digits=8,
         decimal_places=2,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Relacao Ca/K",
@@ -230,12 +294,18 @@ class AnaliseSolo(models.Model):
     mg_k = models.DecimalField(
         max_digits=8,
         decimal_places=2,
+        default=0,
         blank=True,
         null=True,
         verbose_name="Relacao Mg/K",
     )
     c_org = models.DecimalField(
-        max_digits=8, decimal_places=2, blank=True, null=True, verbose_name="C-org"
+        max_digits=8,
+        decimal_places=2,
+        default=0,
+        blank=True,
+        null=True,
+        verbose_name="C-org",
     )
 
     def clean(self):
