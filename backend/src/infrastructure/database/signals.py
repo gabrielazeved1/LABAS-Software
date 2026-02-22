@@ -8,17 +8,22 @@ from src.application.equipamentos.fotometro_chama import CalculadoraFotometroCha
 from src.application.equipamentos.core_matematico import CurvaRegressaoLinear
 from src.application.equipamentos.phmetro import LeitorPHmetro
 from src.application.equipamentos.espectrofotometro import CalculadoraEspectrofotometro
-from src.application.equipamentos.titulacao import (
-    CalculadoraTitulacao,
-)
+from src.application.equipamentos.titulacao import CalculadoraTitulacao
+from src.application.use_cases import CalculadoraAnaliseSolo
+
 
 # =============================================================================
-# 1. CÁLCULO DA CURVA DE CALIBRAÇÃO
+# 1. CALCULO DA CURVA DE CALIBRACAO
 # =============================================================================
 
 
 @receiver([post_save, post_delete], sender=PontoCalibracao)
 def atualizar_equacao_da_bateria(sender, instance, **kwargs):
+    """
+    Escuta alteracoes nos padroes de calibracao.
+    Sempre que um ponto e adicionado, alterado ou removido,
+    recalcula a equacao da reta para o equipamento correspondente.
+    """
     bateria = instance.bateria
     pontos = bateria.pontos.all()
 
@@ -29,25 +34,28 @@ def atualizar_equacao_da_bateria(sender, instance, **kwargs):
             y_lidos = []
             for p in pontos:
                 if p.absorvancia <= Decimal("0"):
+                    # Invalida a curva caso haja uma leitura optica nula ou negativa
                     bateria.coeficiente_angular_a = bateria.coeficiente_linear_b = (
                         bateria.r_quadrado
                     ) = None
                     bateria.save()
                     return
-                # Converte Transmitância lida na curva para Absorbância
+                # Converte Transmitancia lida na curva para Absorbancia (Lei de Beer)
                 y_lidos.append(Decimal("2") - p.absorvancia.log10())
         else:
             y_lidos = [p.absorvancia for p in pontos]
 
         try:
+            # Invoca o motor matematico isolado
             motor = CurvaRegressaoLinear(valores_x=x_padroes, valores_y=y_lidos)
             bateria.coeficiente_angular_a = motor.a
             bateria.coeficiente_linear_b = motor.b
             bateria.r_quadrado = motor.r2.quantize(Decimal("0.000001"))
             bateria.save()
         except Exception as e:
-            print(f"⚠️ Erro curva: {e}")
+            print(f"[ERRO CURVA] Falha ao processar regressao linear: {e}")
     else:
+        # Reseta os coeficientes se nao houver pontos suficientes para formar uma reta
         bateria.coeficiente_angular_a = bateria.coeficiente_linear_b = (
             bateria.r_quadrado
         ) = None
@@ -55,66 +63,80 @@ def atualizar_equacao_da_bateria(sender, instance, **kwargs):
 
 
 # =============================================================================
-# 2. CÁLCULOS AGRONÔMICOS DO LAUDO
+# 2. CALCULOS AGRONOMICOS DO LAUDO
 # =============================================================================
 
 
 @receiver(pre_save, sender=AnaliseSolo)
 def calcular_relacoes_agronomicas(sender, instance, **kwargs):
-    k_cmolc = (instance.k / Decimal("390")) if instance.k else Decimal("0")
-    if instance.ca is not None and instance.mg is not None and instance.k is not None:
-        instance.sb = (instance.ca + instance.mg + k_cmolc).quantize(Decimal("0.01"))
-    if instance.sb is not None and instance.al is not None:
-        instance.t = (instance.sb + instance.al).quantize(Decimal("0.01"))
-    if instance.sb is not None and instance.h_al is not None:
-        instance.T_maiusculo = (instance.sb + instance.h_al).quantize(Decimal("0.01"))
-    if instance.sb is not None and instance.T_maiusculo and instance.T_maiusculo > 0:
-        instance.V = ((instance.sb / instance.T_maiusculo) * Decimal("100")).quantize(
-            Decimal("0.1")
+    """
+    Atua como controlador interceptando o salvamento do laudo.
+    Delega a matematica pesada e as regras de arredondamento para o Use Case,
+    garantindo que as regras de negocio fiquem isoladas do framework web.
+    """
+    # 1. Instancia o Use Case
+    motor_agronomico = CalculadoraAnaliseSolo()
+
+    # 2. Verifica presenca de dados minimos para execucao do calculo
+    if instance.ca is not None or instance.mg is not None or instance.k is not None:
+
+        # 3. Envia os dados brutos para o motor calcular
+        resultados = motor_agronomico.calcular_resultados_completos(
+            k_mg=instance.k,
+            ca=instance.ca,
+            mg=instance.mg,
+            al=instance.al,
+            h_al=instance.h_al,
+            mo=instance.mo,
         )
-    if instance.al is not None and instance.t and instance.t > 0:
-        instance.m = ((instance.al / instance.t) * Decimal("100")).quantize(
-            Decimal("0.1")
-        )
-    if instance.ca and instance.mg and instance.mg > 0:
-        instance.ca_mg = (instance.ca / instance.mg).quantize(Decimal("0.01"))
-    if instance.ca and k_cmolc > 0:
-        instance.ca_k = (instance.ca / k_cmolc).quantize(Decimal("0.01"))
-    if instance.mg and k_cmolc > 0:
-        instance.mg_k = (instance.mg / k_cmolc).quantize(Decimal("0.01"))
-    if instance.mo:
-        instance.c_org = (instance.mo / Decimal("1.72")).quantize(Decimal("0.01"))
+
+        # 4. Atualiza os campos do modelo com os resultados validados pelo Use Case
+        instance.sb = resultados["sb"]
+        instance.t = resultados["t"]
+        instance.T_maiusculo = resultados["T"]
+        instance.V = resultados["V"]
+        instance.m = resultados["m"]
+        instance.ca_mg = resultados["ca_mg"]
+        instance.ca_k = resultados["ca_k"]
+        instance.mg_k = resultados["mg_k"]
+        instance.c_org = resultados["c_org"]
 
 
 # =============================================================================
-# 3. ROBÔ DE PROCESSAMENTO
+# 3. ROBO DE PROCESSAMENTO E INTEGRACAO DE EQUIPAMENTOS
 # =============================================================================
 
 
 @receiver(post_save, sender=LeituraEquipamento)
 def automatizar_calculo_equipamentos(sender, instance, created, **kwargs):
+    """
+    Orquestra o roteamento das leituras brutas inseridas pelos tecnicos.
+    Identifica a origem do dado (Equipamento) e delega o processamento
+    para a classe de dominio correspondente na camada de aplicacao.
+    """
     bateria = instance.bateria
     laudo = instance.analise
     resultado = None
     campo_laudo = None
 
-    # Variáveis brutas sem valores padrões
+    # Variaveis estequiometricas de base
     vol_solo = bateria.volume_solo
     vol_extrator = bateria.volume_extrator
     diluicao = instance.fator_diluicao
 
-    # 🚨 TRAVA GLOBAL NO BACK-END PARA AA, FC, ES
+    # [BLOQUEIO GLOBAL] TRAVA NO BACK-END PARA EQUIPAMENTOS DE EXTRACAO
     if bateria.equipamento in ["AA", "FC", "ES"]:
         if vol_solo is None or vol_extrator is None or diluicao is None:
             print(
-                f"⚠️ [BLOQUEIO GLOBAL] Falha ao processar {bateria.elemento}. V-Solo, V-Extrator ou Diluição ausentes."
+                f"[FALHA DE PROCESSAMENTO] Impossivel calcular {bateria.elemento}. "
+                "V-Solo, V-Extrator ou Diluicao ausentes na configuracao da bateria."
             )
             return
 
-    # 🟣 ADIÇÃO: BLOCO DA TITULAÇÃO (Alumínio e H+Al)
+    # [BLOCO TI] TITULACAO (Aluminio e Acidez Potencial)
     if bateria.equipamento == "TI":
         if bateria.leitura_branco is None:
-            print(f"⚠️ [BLOQUEIO TI] Leitura do Branco ausente para Titulação.")
+            print("[BLOQUEIO TI] Leitura do Branco ausente para o lote de Titulacao.")
             return
 
         maquina_ti = CalculadoraTitulacao()
@@ -130,9 +152,9 @@ def automatizar_calculo_equipamentos(sender, instance, created, **kwargs):
                 )
                 campo_laudo = "h_al"
         except Exception as e:
-            print(f"⚠️ [ERRO TI] {e}")
+            print(f"[ERRO TI] Falha no calculo volumetrico: {e}")
 
-    # 🔵 PHGÂMETRO
+    # [BLOCO PH] PHMETRO
     elif bateria.equipamento == "PH":
         maquina_ph = LeitorPHmetro()
         if "ph_agua" in bateria.elemento:
@@ -157,7 +179,7 @@ def automatizar_calculo_equipamentos(sender, instance, created, **kwargs):
                 "ph_kcl",
             )
 
-    # 🟡 ESPECTROFOTÔMETRO
+    # [BLOCO ES] ESPECTROFOTOMETRO
     elif bateria.equipamento == "ES":
         maquina_es = CalculadoraEspectrofotometro()
         if bateria.elemento == "MO":
@@ -217,7 +239,7 @@ def automatizar_calculo_equipamentos(sender, instance, created, **kwargs):
                 )
                 campo_laudo = "b"
 
-    # 🟢 ABSORÇÃO ATÔMICA
+    # [BLOCO AA] ABSORCAO ATOMICA
     elif (
         bateria.equipamento == "AA"
         and bateria.leitura_branco is not None
@@ -239,7 +261,7 @@ def automatizar_calculo_equipamentos(sender, instance, created, **kwargs):
                 elem,
             )
 
-    # 🔴 FOTÔMETRO DE CHAMA
+    # [BLOCO FC] FOTOMETRO DE CHAMA
     elif bateria.equipamento == "FC" and bateria.coeficiente_angular_a is not None:
         maquina_fc = CalculadoraFotometroChama()
         elem = bateria.elemento.lower()
@@ -255,8 +277,9 @@ def automatizar_calculo_equipamentos(sender, instance, created, **kwargs):
             elem,
         )
 
-    # 💾 SALVAMENTO NO LAUDO
+    # [SALVAMENTO] ATUALIZACAO DO LAUDO
     if resultado is not None and campo_laudo is not None:
+        # Trava de integridade garantindo que nutrientes nao fiquem negativos
         if resultado < 0:
             resultado = Decimal("0.00")
         setattr(laudo, campo_laudo, resultado)
