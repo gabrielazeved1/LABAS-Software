@@ -3,9 +3,10 @@ from decimal import Decimal
 
 class LeitorPHmetro:
     """
-    Módulo para o pHmetro.
-    A leitura do pH é direta (o valor do visor vai direto para o laudo).
-    Este módulo padroniza a entrada e aplica validações agronômicas de segurança.
+    Modulo para o equipamento pHmetro.
+    A leitura do pH e direta (o valor do visor vai direto para o laudo).
+    Este modulo padroniza a entrada e aplica validacoes agronomicas de seguranca
+    contra erros de digitacao do operador.
     """
 
     def registrar_leituras(
@@ -13,13 +14,13 @@ class LeitorPHmetro:
     ) -> dict:
         """
         Registra as leituras de pH.
-        Como o laboratório pode não ler todas as soluções de uma vez,
-        os parâmetros são opcionais.
+        Como o laboratorio pode nao ler todas as solucoes em uma unica bateria,
+        os parametros sao opcionais e tratados de forma independente.
         """
         resultados = {}
 
         if ph_agua is not None:
-            self._validar_escala_ph(ph_agua, "pH em Água")
+            self._validar_escala_ph(ph_agua, "pH em Agua")
             resultados["ph_agua"] = ph_agua.quantize(Decimal("0.01"))
 
         if ph_cacl2 is not None:
@@ -35,9 +36,11 @@ class LeitorPHmetro:
     def _validar_escala_ph(self, valor: Decimal, tipo_leitura: str):
         """
         Garante que o valor digitado faz sentido fisicamente (0 a 14).
-        Solos normalmente variam de 3 a 9, mas travamos na escala química padrão.
+        Solos normalmente variam de 3 a 9, mas a trava de seguranca
+        utiliza a escala quimica padrao completa.
         """
         if valor < Decimal("0") or valor > Decimal("14"):
+            # Mantida a string de erro original com acentos para exibicao correta na tela do usuario
             raise ValueError(
                 f"Erro de Digitação: O valor de {tipo_leitura} ({valor}) "
                 f"está fora da escala real de pH (0 a 14)."
