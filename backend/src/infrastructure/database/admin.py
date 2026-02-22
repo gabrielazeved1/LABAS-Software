@@ -14,12 +14,19 @@ from .models import (
 
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
+    """
+    Interface de administracao para a entidade Cliente.
+    """
+
     list_display = ("codigo", "nome", "municipio", "contato")
     search_fields = ("nome", "codigo")
 
 
 class LeituraEquipamentoLaudoInline(admin.TabularInline):
-    """Exibe as leituras brutas diretamente dentro da ficha do Laudo."""
+    """
+    Interface inline que exibe as leituras brutas diretamente dentro da ficha do Laudo.
+    Agiliza a digitacao dos resultados pelo tecnico.
+    """
 
     model = LeituraEquipamento
     extra = 6
@@ -28,28 +35,34 @@ class LeituraEquipamentoLaudoInline(admin.TabularInline):
 
 @admin.register(AnaliseSolo)
 class AnaliseSoloAdmin(admin.ModelAdmin):
+    """
+    Painel central do sistema: O Laudo de Analise de Solo.
+    Organiza os inumeros atributos quimicos e fisicos em blocos logicos expansivos,
+    espelhando as planilhas oficiais do laboratorio.
+    """
+
     list_display = ("n_lab", "cliente", "data_entrada", "ph_agua", "p_m")
     search_fields = ("n_lab", "cliente__nome")
     inlines = [LeituraEquipamentoLaudoInline]
 
     fieldsets = (
         (
-            "1. Identificação e Controle",
+            "1. Identificacao e Controle",
             {"fields": (("n_lab", "cliente"), ("data_entrada", "data_saida"))},
         ),
-        ("2. Phagâmetro (Acidez)", {"fields": (("ph_agua", "ph_cacl2", "ph_kcl"),)}),
+        ("2. Phagametro (Acidez)", {"fields": (("ph_agua", "ph_cacl2", "ph_kcl"),)}),
         (
-            "3. Espectrofotômetro (Fósforo, Enxofre, Boro e MO)",
+            "3. Espectrofotometro (Fosforo, Enxofre, Boro e MO)",
             {"fields": (("p_m", "p_r", "p_rem"), ("mo", "s", "b"))},
         ),
-        ("4. Fotômetro de Chama", {"fields": (("k", "na"),)}),
+        ("4. Fotometro de Chama", {"fields": (("k", "na"),)}),
         (
-            "5. Absorção Atômica (Bases e Micros)",
+            "5. Absorcao Atomica (Bases e Micros)",
             {"fields": (("ca", "mg"), ("cu", "fe"), ("mn", "zn"))},
         ),
-        ("6. Titulação", {"fields": (("al", "h_al"),)}),
+        ("6. Titulacao", {"fields": (("al", "h_al"),)}),
         (
-            "7. Física do Solo (Granulometria)",
+            "7. Fisica do Solo (Granulometria)",
             {"classes": ("collapse",), "fields": (("areia", "argila", "silte"),)},
         ),
         (
@@ -68,27 +81,34 @@ class AnaliseSoloAdmin(admin.ModelAdmin):
 
 
 # =============================================================================
-# 2. CONFIGURAÇÃO DE BATERIAS E CURVAS DE CALIBRAÇÃO
+# 2. CONFIGURACAO DE BATERIAS E CURVAS DE CALIBRACAO
 # =============================================================================
 
 
 class PontoCalibracaoInline(admin.TabularInline):
-    """Pontos da Curva com conversão visual de Transmitância para Absorbância."""
+    """
+    Interface inline para inserir os pontos padroes da curva de calibracao.
+    Inclui um feedback visual convertendo Transmitancia para Absorbancia em tempo real.
+    """
 
     model = PontoCalibracao
     extra = 6
     fields = ("concentracao", "absorvancia", "exibir_abs_convertida")
     readonly_fields = ("exibir_abs_convertida",)
 
-    @admin.display(description="Absorbância Real (Calculada)")
+    @admin.display(description="Absorbancia Real (Calculada)")
     def exibir_abs_convertida(self, instance):
+        """
+        Gera o feedback visual para o operador da maquina.
+        Aplica a Lei de Beer para visualizacao da conversao otica no painel.
+        """
         if not instance.pk or instance.absorvancia is None:
             return "-"
         from decimal import Decimal
 
         if instance.bateria.equipamento == "ES":
             if instance.absorvancia > 0:
-                # Mostra ao técnico o valor que o sistema usará para a reta
+                # Mostra ao tecnico o valor exato que o sistema usara no motor matematico
                 val = Decimal("2") - instance.absorvancia.log10()
                 return f"{val:.6f}"
             return "Erro T%"
@@ -97,6 +117,11 @@ class PontoCalibracaoInline(admin.TabularInline):
 
 @admin.register(BateriaCalibracao)
 class BateriaCalibracaoAdmin(admin.ModelAdmin):
+    """
+    Painel de controle das configuracoes diarias dos equipamentos.
+    Apresenta dinamicamente os campos necessarios dependendo da maquina selecionada.
+    """
+
     list_display = (
         "elemento",
         "equipamento",
@@ -108,28 +133,34 @@ class BateriaCalibracaoAdmin(admin.ModelAdmin):
     readonly_fields = ("equacao_formada",)
 
     def get_inlines(self, request, obj=None):
-        # PH e MO não possuem curva de calibração diária
+        """
+        Remove a tabela de pontos de calibracao para equipamentos ou elementos
+        que utilizam logica direta, como pH e Materia Organica.
+        """
         if obj and (obj.equipamento == "PH" or obj.elemento == "MO"):
             return []
         return [PontoCalibracaoInline]
 
     def get_fieldsets(self, request, obj=None):
-        # Estrutura base de campos
+        """
+        Monta a interface de configuracao exibindo apenas os campos que
+        fazem sentido fisico e quimico para o equipamento especifico.
+        """
         info_bloco = (
-            "Informações da Bateria",
+            "Informacoes da Bateria",
             {"fields": (("equipamento", "elemento"), "ativo")},
         )
 
         metodologia_bloco = (
-            "Configuração da Metodologia",
+            "Configuracao da Metodologia",
             {
                 "fields": (("volume_solo", "volume_extrator"),),
-                "description": "Defina os volumes usados (Solo em cm³ e Extrator em ml).",
+                "description": "Defina os volumes usados (Solo em cm3 e Extrator em ml).",
             },
         )
 
         equacao_bloco = (
-            "Equação da Reta (Automática)",
+            "Equacao da Reta (Automatica)",
             {
                 "fields": (
                     "equacao_formada",
@@ -139,17 +170,17 @@ class BateriaCalibracaoAdmin(admin.ModelAdmin):
             },
         )
 
-        fundo_bloco = ("Correção de Fundo", {"fields": ("leitura_branco",)})
+        fundo_bloco = ("Correcao de Fundo", {"fields": ("leitura_branco",)})
 
-        # Lógica de exibição por equipamento
+        # Logica de exibicao condicional por equipamento
         if obj and (obj.equipamento == "PH" or obj.elemento == "MO"):
             return (info_bloco,)
 
         if obj and obj.equipamento == "FC":
-            # Fotômetro de chama não usa leitura de branco
+            # Fotometro de chama nao requer configuracao de leitura de branco
             return (info_bloco, metodologia_bloco, equacao_bloco)
 
-        # Padrão para AA e ES (Exibe tudo incluindo o Branco)
+        # Padrao para Absorcao Atomica e Espectrofotometro (Exibe bloco completo)
         return (info_bloco, metodologia_bloco, equacao_bloco, fundo_bloco)
 
 
@@ -160,6 +191,11 @@ class BateriaCalibracaoAdmin(admin.ModelAdmin):
 
 @admin.register(LeituraEquipamento)
 class LeituraEquipamentoAdmin(admin.ModelAdmin):
+    """
+    Visao geral em lista de todas as leituras brutas registradas no laboratorio.
+    Permite edicao rapida em lote e filtragem avancada por equipamento ou elemento.
+    """
+
     list_display = ("analise", "bateria", "leitura_bruta", "fator_diluicao")
     list_editable = ("bateria", "leitura_bruta", "fator_diluicao")
     list_filter = ("bateria__elemento", "bateria__equipamento")
