@@ -28,8 +28,8 @@ inclinacao_p_rem = curva_p_rem.a  # N16
 intercepto_a = curva_p_rem.b  # N17
 
 print("==================================================")
-print("📈 LAUDO DE CALIBRAÇÃO (EQUAÇÃO DA RETA) - P-rem")
-print("==================================================")
+print("LAUDO DE CALIBRAÇÃO (EQUAÇÃO DA RETA) - P-rem")
+
 sinal = "+" if intercepto_a >= 0 else "-"
 equacao = f"y = {inclinacao_p_rem.quantize(Decimal('0.0001'))}x {sinal} {abs(intercepto_a).quantize(Decimal('0.0001'))}"
 
@@ -42,7 +42,7 @@ print(
 )
 
 print("==================================================")
-print("🔍 TESTE DA AMOSTRA (Transmitância = 51.26%)")
+print("TESTE DA AMOSTRA (Transmitância = 51.26%)")
 print("==================================================")
 maquina = CalculadoraEspectrofotometro()
 
@@ -57,7 +57,7 @@ resultado_p_rem = maquina.calcular_p_rem(
     fator_coluna_e=fator_e,
 )
 
-# Prova real
+
 abs_calculada = Decimal("2") - transmitancia_lida.log10()
 
 print(f"1. Transmitância Lida: {transmitancia_lida}%")
@@ -65,4 +65,3 @@ print(f"2. Absorbância Calculada: {abs_calculada.quantize(Decimal('0.00001'))}"
 print(f"3. Valor do multiplicador (Coluna E): {fator_e}")
 print(f"4. Resultado Final P-rem: {resultado_p_rem} mg/L")
 print("==================================================")
-print("✅ ESPECTROFOTÔMETRO AGORA SIM, 100% FINALIZADO!")

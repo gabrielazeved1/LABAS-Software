@@ -28,7 +28,7 @@ inclinacao_na = curva_na.a  # L16
 intercepto_a = curva_na.b  # L17
 
 print("==================================================")
-print("📈 LAUDO DE CALIBRAÇÃO (EQUAÇÃO DA RETA) - SÓDIO")
+print("LAUDO DE CALIBRAÇÃO (EQUAÇÃO DA RETA) - SÓDIO")
 print("==================================================")
 sinal = "+" if intercepto_a >= 0 else "-"
 equacao = f"y = {inclinacao_na.quantize(Decimal('0.0001'))}x {sinal} {abs(intercepto_a).quantize(Decimal('0.0001'))}"
@@ -42,7 +42,7 @@ print(
 )
 
 print("==================================================")
-print("🔍 TESTE DAS AMOSTRAS (5 Valores de Emissão)")
+print("TESTE DAS AMOSTRAS (5 Valores de Emissão)")
 print("==================================================")
 maquina = CalculadoraFotometroChama()
 
@@ -69,6 +69,4 @@ for emissao_lida in emissoes_para_testar:
         volume_solo_cm3=vol_solo,
     )
 
-    print(
-        f"🔹 Emissão Lida: {emissao_lida} u.a. -> Sódio Disponível: {resultado} mg/dm³"
-    )
+    print(f"Emissão Lida: {emissao_lida} u.a. -> Sódio Disponível: {resultado} mg/dm³")

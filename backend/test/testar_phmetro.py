@@ -2,12 +2,12 @@ from decimal import Decimal
 from src.application.equipamentos.phmetro import LeitorPHmetro
 
 print("==================================================")
-print("TESTE DO pHMETRO (LEITURA DIRETA E VALIDAÇÃO)")
-print("==================================================")
+print("TESTE DO pHMETRO")
+
 
 leitor = LeitorPHmetro()
 
-# Simulando o técnico digitando os valores do visor
+
 leitura_agua = Decimal("6.25")
 leitura_cacl2 = Decimal("5.50")
 leitura_kcl = Decimal("5.10")
@@ -36,5 +36,3 @@ try:
     leitor.registrar_leituras(ph_agua=leitura_errada)
 except ValueError as e:
     print(f"O sistema bloqueou o erro com sucesso: \n   {e}")
-
-print("==================================================")

@@ -34,7 +34,7 @@ inclinacao_p = curva_p_resina.a  # N19
 intercepto_a = curva_p_resina.b  # N20
 
 print("==================================================")
-print("📈 LAUDO DE CALIBRAÇÃO (EQUAÇÃO DA RETA) - P-RESINA")
+print("LAUDO DE CALIBRAÇÃO (EQUAÇÃO DA RETA) - P-RESINA")
 print("==================================================")
 sinal = "+" if intercepto_a >= 0 else "-"
 equacao = f"y = {inclinacao_p.quantize(Decimal('0.0001'))}x {sinal} {abs(intercepto_a).quantize(Decimal('0.0001'))}"
@@ -48,7 +48,7 @@ print(
 )
 
 print("==================================================")
-print("🔍 TESTE DAS AMOSTRAS (Transmitâncias: 50% e 90%)")
+print("TESTE DAS AMOSTRAS (Transmitâncias: 50% e 90%)")
 print("==================================================")
 maquina = CalculadoraEspectrofotometro()
 
@@ -73,5 +73,3 @@ for trans_lida in transmitancias_para_testar:
     print(f"🔹 Teste com Transmitância: {trans_lida}%")
     print(f"   Absorbância Calculada: {abs_calculada.quantize(Decimal('0.000001'))}")
     print(f"   Resultado Final P-Resina: {resultado} mg/dm³\n")
-
-print("✅ MÓDULO P-RESINA CONCLUÍDO COM SUCESSO!")

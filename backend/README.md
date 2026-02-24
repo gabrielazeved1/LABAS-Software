@@ -13,7 +13,6 @@ Como você usa Poetry, não precisa ativar o venv manualmente se usar o `run`. R
 poetry install
 
 # Sincronizar o Banco (SQLite)
-# Você já resolveu as renomeações, mas é bom garantir:
 poetry run python manage.py migrate
 ```
 

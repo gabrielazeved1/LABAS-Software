@@ -5,7 +5,7 @@ from src.application.equipamentos.absorcao_atomica import CalculadoraAbsorcaoAto
 getcontext().prec = 10
 
 print("==================================================")
-print("🧪 TESTE ABSORÇÃO ATÔMICA: FERRO (Fe)")
+print("TESTE ABSORÇÃO ATÔMICA: FERRO (Fe)")
 print("==================================================")
 
 valores_x = [
@@ -28,7 +28,7 @@ valores_y = [
 curva = CurvaRegressaoLinear(valores_x, valores_y)
 
 sinal = "+" if curva.b >= 0 else "-"
-print("📈 LAUDO DE CALIBRAÇÃO (EQUAÇÃO DA RETA):")
+print("AUDO DE CALIBRAÇÃO (EQUAÇÃO DA RETA):")
 print(
     f"Equação Gerada: y = {curva.a.quantize(Decimal('0.0001'))}x {sinal} {abs(curva.b).quantize(Decimal('0.0001'))}"
 )

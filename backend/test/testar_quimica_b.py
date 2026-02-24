@@ -4,7 +4,7 @@ from src.application.equipamentos.espectrofotometro import CalculadoraEspectrofo
 
 getcontext().prec = 10
 
-print("🧪 TESTE DO BORO (B) - ESPECTROFOTÔMETRO\n")
+print("TESTE DO BORO (B) - ESPECTROFOTÔMETRO\n")
 
 # 1. Dados da Curva de Calibração (Boro)
 valores_x = [
@@ -30,7 +30,7 @@ inclinacao_b = curva_b.a  # N16 no Excel (O Excel chama de 'b')
 intercepto_a = curva_b.b  # N17 no Excel (O Excel chama de 'a')
 
 print("==================================================")
-print("📈 LAUDO DE CALIBRAÇÃO (EQUAÇÃO DA RETA)")
+print("LAUDO DE CALIBRAÇÃO (EQUAÇÃO DA RETA)")
 print("==================================================")
 # Ajusta o sinal visualmente para a equação ficar correta (ex: + 0.02 ou - 0.02)
 sinal = "+" if intercepto_a >= 0 else "-"
@@ -45,8 +45,7 @@ print("🔍 TESTE DE CÁLCULO DA AMOSTRA (Com Logaritmo)")
 print("==================================================")
 maquina = CalculadoraEspectrofotometro()
 
-# Lembrete: A fórmula do Excel para o Boro "=((G8)/N$16)..." IGNORA o intercepto (N17).
-# Ela divide a Absorbância direto pela Inclinação (N16).
+
 transmitancia_lida = Decimal("94.10")  # F8: O aparelho leu 45.5% (Transmitância)
 vol_extrator = Decimal("20")
 diluicao = Decimal("1.5")
@@ -65,4 +64,3 @@ abs_calculada = Decimal("2") - transmitancia_lida.log10()
 print(f"1. Transmitância Lida: {transmitancia_lida}%")
 print(f"2. Conversão para Absorbância: {abs_calculada.quantize(Decimal('0.0001'))}")
 print(f"3. Resultado B-disponível: {resultado_b} mg/dm³")
-print("==================================================")

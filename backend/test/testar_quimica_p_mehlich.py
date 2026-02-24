@@ -28,7 +28,7 @@ inclinacao_p = curva_p.a
 intercepto_a = curva_p.b
 
 print("==================================================")
-print("📈 LAUDO DE CALIBRAÇÃO (EQUAÇÃO DA RETA) - FÓSFORO")
+print("LAUDO DE CALIBRAÇÃO (EQUAÇÃO DA RETA) - FÓSFORO")
 print("==================================================")
 sinal = "+" if intercepto_a >= 0 else "-"
 equacao = f"y = {inclinacao_p.quantize(Decimal('0.0001'))}x {sinal} {abs(intercepto_a).quantize(Decimal('0.0001'))}"
@@ -66,4 +66,4 @@ print(f"1. Transmitância Lida: {transmitancia_lida}%")
 print(f"2. Absorbância Calculada: {abs_calculada.quantize(Decimal('0.000001'))}")
 print(f"3. Resultado Final P-disponível: {resultado_p} mg/dm³")
 print("==================================================")
-print("✅ ESPECTROFOTÔMETRO CONCLUÍDO COM SUCESSO!")
+print("ESPECTROFOTÔMETRO CONCLUÍDO COM SUCESSO!")

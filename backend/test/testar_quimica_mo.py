@@ -36,4 +36,4 @@ print(
 )
 print(f"4. Resultado MO (MOS dag/kg): {resultado_mo} ")
 print("==================================================")
-print("✅ Teste com equação impressa finalizado!")
+print("Teste com equação impressa finalizado!")

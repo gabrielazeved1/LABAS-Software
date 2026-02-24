@@ -36,7 +36,7 @@ inclinacao_s = curva_s.a
 intercepto_a = curva_s.b
 
 print("==================================================")
-print("📈 LAUDO DE CALIBRAÇÃO (EQUAÇÃO DA RETA) - ENXOFRE")
+print("LAUDO DE CALIBRAÇÃO (EQUAÇÃO DA RETA) - ENXOFRE")
 print("==================================================")
 sinal = "+" if intercepto_a >= 0 else "-"
 equacao = f"y = {inclinacao_s.quantize(Decimal('0.0001'))}x {sinal} {abs(intercepto_a).quantize(Decimal('0.0001'))}"
@@ -46,7 +46,7 @@ print(f"-> 'b' (Inclinação): {inclinacao_s.quantize(Decimal('0.000001'))}")
 print(f"-> 'a' (Intercepto): {intercepto_a.quantize(Decimal('0.000001'))}\n")
 
 print("==================================================")
-print("🔍 TESTE DA AMOSTRA: REGRA OFICIAL (COM INTERCEPTO)")
+print("TESTE DA AMOSTRA: REGRA OFICIAL (COM INTERCEPTO)")
 print("==================================================")
 maquina = CalculadoraEspectrofotometro()
 
@@ -69,4 +69,3 @@ abs_calculada = Decimal("2") - transmitancia_lida.log10()
 print(f"Transmitância Lida: {transmitancia_lida}%")
 print(f"Absorbância Calculada: {abs_calculada.quantize(Decimal('0.00001'))}")
 print(f"Resultado Final S-disponível: {resultado_s} mg/dm³")
-print("✅ Teste Finalizado e alinhado com a Jéssica!")

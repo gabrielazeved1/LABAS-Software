@@ -2,7 +2,7 @@ from decimal import Decimal
 from src.application.equipamentos.titulacao import CalculadoraTitulacao
 
 print("==================================================")
-print("🧪 TESTE DE TITULAÇÃO: ALUMÍNIO E ACIDEZ POTENCIAL")
+print("TESTE DE TITULAÇÃO: ALUMÍNIO E ACIDEZ POTENCIAL")
 print("==================================================")
 
 calculadora = CalculadoraTitulacao()
@@ -44,6 +44,3 @@ for nome, leitura in amostras_hal:
     print(
         f"Amostra {nome}: Lido = {leitura} -> Fórmula ({leitura} - {branco_hal}) = {resultado}"
     )
-
-print("\n==================================================")
-print("✅ MÓDULO DE TITULAÇÃO CONCLUÍDO COM SUCESSO!")

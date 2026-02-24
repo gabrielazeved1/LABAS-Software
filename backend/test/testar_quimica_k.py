@@ -42,7 +42,7 @@ print(
 )
 
 print("==================================================")
-print("🔍 TESTE DAS AMOSTRAS (Emissões: 2 e 48)")
+print("TESTE DAS AMOSTRAS (Emissões: 2 e 48)")
 print("==================================================")
 maquina = CalculadoraFotometroChama()
 
@@ -62,5 +62,5 @@ for emissao_lida in emissoes_para_testar:
         volume_solo_cm3=vol_solo,
     )
 
-    print(f"🔹 Teste com Emissão Lida: {emissao_lida} u.a.")
+    print(f"Teste com Emissão Lida: {emissao_lida} u.a.")
     print(f"   Resultado Final K-disponível: {resultado} mg/dm³\n")
