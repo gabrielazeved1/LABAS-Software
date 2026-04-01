@@ -28,15 +28,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Bibliotecas de Infraestrutura
-    "corsheaders",  # Gerencia acesso de diferentes origens (Mobile/React)
-    "rest_framework",  # Motor da API
-    # Seus Apps
+    "corsheaders",
+    "rest_framework",
+    "drf_spectacular",
     "src.infrastructure.database.apps.DatabaseConfig",
 ]
 
 MIDDLEWARE = [
-    "corsheaders.middleware.CorsMiddleware",  # Deve ser o primeiro
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -48,11 +47,11 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = "config.urls"
 
-# Bloco TEMPLATES consolidado (removida a duplicata)
+
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],  # Onde moram os laudos HTML
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -87,15 +86,13 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# =============================================================================
+
 # CONFIGURACOES DA API (REST FRAMEWORK, JWT, THROTTLING, PAGINATION)
-# =============================================================================
+
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        # JWT para o App Mobile/Frontend
         "rest_framework_simplejwt.authentication.JWTAuthentication",
-        # Session para permitir testes diretos no navegador via Django Admin
         "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_PERMISSION_CLASSES": [
@@ -113,6 +110,16 @@ REST_FRAMEWORK = {
         "anon": "100/day",
         "user": "1000/hour",
     },
+    # 3. Schema: Motor de documentacao automatica
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "LABAS API",
+    "DESCRIPTION": "API do Laboratorio de Analise de Solo (LABAS - UFU). Documentacao para consumo pelo frontend e equipe tecnica.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "COMPONENT_SPLIT_REQUEST": True,
 }
 
 SIMPLE_JWT = {
