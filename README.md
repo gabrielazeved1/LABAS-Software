@@ -19,7 +19,7 @@ A arquitetura do projeto está dividida em duas camadas principais, desenvolvida
 
 O sistema é mantido por dois responsáveis técnicos, focados em áreas distintas da aplicação:
 
-- **Desenvolvedor Frontend:** Ana Luiza Lamonier - Responsável pela interface web e experiência de utilização.
+- **Desenvolvedoras Frontend:** Ana Luiza Lamonier e Sabrina Ferreira Costa - Responsáveis pela interface web e experiência de utilização.
 - **Desenvolvedor Backend:** Gabriel Azevedo - Responsável pela arquitetura do servidor, desenvolvimento de APIs e modelagem da base de dados.
 
 ## Documentação Técnica
