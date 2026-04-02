@@ -9,6 +9,57 @@
 
 ---
 
+## Índice
+
+| #   | Seção                                                                               |
+| --- | ----------------------------------------------------------------------------------- |
+| 0   | [Fluxo de Branches (Git)](#0-fluxo-de-branches-git)                                 |
+| 1   | [Contexto do Sistema](#1-contexto-do-sistema)                                       |
+| 2   | [Paleta de Cores (MUI Theme)](#2-paleta-de-cores-mui-theme)                         |
+| 3   | [Arquitetura SOLID](#3-arquitetura-solid-aplicada-ao-react)                         |
+| 4   | [Estrutura de Pastas](#4-estrutura-de-pastas)                                       |
+| 5   | [Tipos TypeScript](#5-tipos-typescript-espelho-dos-models-django)                   |
+| 6   | [Serviços de API](#6-serviços-de-api)                                               |
+| 7   | [Mapa de Páginas](#7-mapa-de-páginas)                                               |
+| 8   | [Roteamento e Proteção de Rotas](#8-roteamento-e-proteção-de-rotas)                 |
+| 9   | [Autenticação — Fluxo Completo](#9-autenticação--fluxo-completo)                    |
+| 10  | [Convenções de Código](#10-convenções-de-código)                                    |
+| 11  | [Dependências Recomendadas](#11-dependências-recomendadas)                          |
+| 12  | [Inicialização do Projeto](#12-inicialização-do-projeto)                            |
+| 13  | [Mapeamento Backend → Frontend](#13-mapeamento-backend--frontend-referência-rápida) |
+| 14  | [Checklist de Entrega por Feature](#14-checklist-de-entrega-por-feature)            |
+| 15  | [Divisão de Responsabilidades](#15-divisão-de-responsabilidades)                    |
+| 16  | [Estratégia de Integração com a API](#16-estratégia-de-integração-com-a-api)        |
+| 17  | [Tratamento de Erros](#17-tratamento-de-erros)                                      |
+| 18  | [Checklist de Entrega (Expandido)](#18-checklist-de-entrega-por-feature)            |
+
+---
+
+## Status das Sprints
+
+### Sprint 0 — Fundação (`feat/gabriel/foundation`)
+
+| Tarefa                     | Arquivo                                      | Status     |
+| -------------------------- | -------------------------------------------- | ---------- |
+| Estrutura de pastas `src/` | —                                            | ✅ Feito   |
+| MUI Theme                  | `src/theme/index.ts`                         | ⬜ A fazer |
+| Axios + interceptors JWT   | `src/services/api.ts`                        | ⬜ A fazer |
+| Tipos base                 | `src/types/auth.ts` + `src/types/cliente.ts` | ⬜ A fazer |
+| AuthContext                | `src/contexts/AuthContext.tsx`               | ⬜ A fazer |
+| authService                | `src/services/authService.ts`                | ⬜ A fazer |
+
+### Sprint 1 — Autenticação e Layout
+
+| Tarefa                                                            | Arquivo                           | Status     |
+| ----------------------------------------------------------------- | --------------------------------- | ---------- |
+| LoginPage                                                         | `src/pages/auth/LoginPage.tsx`    | ⬜ A fazer |
+| RegisterPage                                                      | `src/pages/auth/RegisterPage.tsx` | ⬜ A fazer |
+| Roteamento + PrivateRoute + StaffRoute                            | `src/App.tsx`                     | ⬜ A fazer |
+| AppShell + AppSidebar + AppHeader                                 | `src/components/layout/*.tsx`     | ⬜ A fazer |
+| StatusChip, ConfirmDialog, LoadingOverlay, EmptyState, PageHeader | `src/components/shared/*.tsx`     | ⬜ A fazer |
+
+---
+
 ## 0. Fluxo de Branches (Git)
 
 ```
@@ -75,74 +126,158 @@ A identidade visual é institucional/científica, baseada nas cores da UFU e do 
 
 ```ts
 // src/theme/index.ts
+// src/theme/index.ts
 import { createTheme } from "@mui/material/styles";
 
 export const theme = createTheme({
   palette: {
     mode: "light",
+
     primary: {
-      main: "#1A5276", // Azul UFU profundo
-      light: "#2E86C1", // Azul médio — botões hover
-      dark: "#0E2F44", // Azul escuro — sidebar, header
+      main: "#233b1a",       // base institucional
+      light: "#476546",      // variação suave
+      dark: "#1a2c14",       // versão mais escura
       contrastText: "#FFFFFF",
     },
+
     secondary: {
-      main: "#2E7D32", // Verde agrônomo
-      light: "#4CAF50", // Verde claro — badges de status OK
-      dark: "#1B5E20", // Verde escuro — ênfase
+      main: "#476546",       // apoio visual (cards, elementos secundários)
+      light: "#6d8262",
+      dark: "#2f4430",
       contrastText: "#FFFFFF",
     },
+
+    success: {
+      main: "#2e7d32",
+    },
+
     warning: {
-      main: "#F9A825", // Âmbar terra — alertas e destaques
+      main: "#ed6c02",
     },
+
     error: {
-      main: "#C62828", // Vermelho — valores críticos
+      main: "#d32f2f",
     },
+
+    info: {
+      main: "#0288d1",
+    },
+
     background: {
-      default: "#F4F6F8", // Cinza claríssimo — fundo geral
-      paper: "#FFFFFF", // Branco — cards, tabelas
+      default: "#F5F5F3",    // fundo neutro leve
+      paper: "#FFFFFF",
     },
+
     text: {
-      primary: "#1C2833", // Quase preto — texto principal
-      secondary: "#5D6D7E", // Cinza médio — labels, subtítulos
+      primary: "#1F1F1F",
+      secondary: "#6d8262",  // muted
     },
-    divider: "#D5D8DC", // Cinza divisor (similar ao #f2f2f2 do PDF)
+
+    divider: "#a7b698",
+
+    grey: {
+      300: "#a7b698",
+      500: "#6d8262",
+    },
   },
+
   typography: {
     fontFamily: '"Inter", "Roboto", "Arial", sans-serif',
+
     h4: { fontWeight: 700 },
     h5: { fontWeight: 600 },
     h6: { fontWeight: 600 },
-    body2: { color: "#5D6D7E" },
+
+    body1: {
+      color: "#1F1F1F",
+    },
+
+    body2: {
+      color: "#6d8262",
+    },
   },
+
   shape: {
     borderRadius: 8,
   },
+
   components: {
     MuiButton: {
       styleOverrides: {
-        root: { textTransform: "none", fontWeight: 600 },
+        root: {
+          textTransform: "none",
+          fontWeight: 600,
+          borderRadius: 8,
+        },
       },
     },
+
     MuiTableHead: {
       styleOverrides: {
         root: {
           "& th": {
-            backgroundColor: "#1A5276",
+            backgroundColor: "#233b1a",
             color: "#FFFFFF",
             fontWeight: 700,
           },
         },
       },
     },
+
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderColor: "#a7b698",
+        },
+      },
+    },
+
     MuiChip: {
       styleOverrides: {
-        root: { fontWeight: 600 },
+        root: {
+          fontWeight: 600,
+        },
+      },
+    },
+
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          "& fieldset": {
+            borderColor: "#a7b698",
+          },
+          "&:hover fieldset": {
+            borderColor: "#336006",
+          },
+          "&.Mui-focused fieldset": {
+            borderColor: "#233b1a",
+          },
+        },
+      },
+    },
+
+    MuiAlert: {
+      styleOverrides: {
+        standardSuccess: {
+          backgroundColor: "#2e7d32",
+          color: "#fff",
+        },
+        standardWarning: {
+          backgroundColor: "#ed6c02",
+          color: "#fff",
+        },
+        standardError: {
+          backgroundColor: "#d32f2f",
+          color: "#fff",
+        },
+        standardInfo: {
+          backgroundColor: "#0288d1",
+          color: "#fff",
+        },
       },
     },
   },
 });
-```
 
 ### Referência Rápida de Cores
 
@@ -170,9 +305,11 @@ export const theme = createTheme({
 - Um arquivo de types contém **apenas as interfaces** de um domínio
 
 ```
+
 ❌ ERRADO: Componente que faz fetch E renderiza E valida formulário
-✅ CERTO:  useLaudos() faz o fetch | LaudoForm renderiza | validators/laudo.ts valida
-```
+✅ CERTO: useLaudos() faz o fetch | LaudoForm renderiza | validators/laudo.ts valida
+
+````
 
 ### O — Open/Closed (Aberto/Fechado)
 
@@ -183,7 +320,7 @@ export const theme = createTheme({
 <StatusChip status="pendente" />
 <StatusChip status="concluido" />
 <StatusChip status="cancelado" />
-```
+````
 
 ### L — Liskov Substitution (Substituição de Liskov)
 
