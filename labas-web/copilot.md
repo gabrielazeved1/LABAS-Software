@@ -37,26 +37,110 @@
 
 ## Status das Sprints
 
-### Sprint 0 — Fundação (`feat/gabriel/foundation`)
+> Última atualização: 02/04/2026
 
-| Tarefa                     | Arquivo                                      | Status     |
-| -------------------------- | -------------------------------------------- | ---------- |
-| Estrutura de pastas `src/` | —                                            | ✅ Feito   |
-| MUI Theme                  | `src/theme/index.ts`                         | ⬜ A fazer |
-| Axios + interceptors JWT   | `src/services/api.ts`                        | ⬜ A fazer |
-| Tipos base                 | `src/types/auth.ts` + `src/types/cliente.ts` | ⬜ A fazer |
-| AuthContext                | `src/contexts/AuthContext.tsx`               | ⬜ A fazer |
-| authService                | `src/services/authService.ts`                | ⬜ A fazer |
+---
 
-### Sprint 1 — Autenticação e Layout
+### Gabriel — `feat/gabriel/foundation`
 
-| Tarefa                                                            | Arquivo                           | Status     |
-| ----------------------------------------------------------------- | --------------------------------- | ---------- |
-| LoginPage                                                         | `src/pages/auth/LoginPage.tsx`    | ⬜ A fazer |
-| RegisterPage                                                      | `src/pages/auth/RegisterPage.tsx` | ⬜ A fazer |
-| Roteamento + PrivateRoute + StaffRoute                            | `src/App.tsx`                     | ⬜ A fazer |
-| AppShell + AppSidebar + AppHeader                                 | `src/components/layout/*.tsx`     | ⬜ A fazer |
-| StatusChip, ConfirmDialog, LoadingOverlay, EmptyState, PageHeader | `src/components/shared/*.tsx`     | ⬜ A fazer |
+#### Sprint 0 — Fundação ✅ Concluída (commit `d020412`)
+
+| Tarefa                           | Arquivo                        | Status   |
+| -------------------------------- | ------------------------------ | -------- |
+| Estrutura de pastas `src/`       | —                              | ✅ Feito |
+| Limpeza do boilerplate Vite      | `src/main.tsx`, `src/assets/`  | ✅ Feito |
+| README de onboarding             | `README.md`                    | ✅ Feito |
+| `.env.example`                   | `.env.example`                 | ✅ Feito |
+| `.gitignore` atualizado          | `.gitignore`                   | ✅ Feito |
+| MUI Theme — paleta institucional | `src/theme/index.ts`           | ✅ Feito |
+| Tipos TypeScript — auth          | `src/types/auth.ts`            | ✅ Feito |
+| Tipos TypeScript — cliente       | `src/types/cliente.ts`         | ✅ Feito |
+| Tipos TypeScript — análise       | `src/types/analise.ts`         | ✅ Feito |
+| Tipos TypeScript — calibração    | `src/types/calibracao.ts`      | ✅ Feito |
+| Axios + interceptors JWT         | `src/services/api.ts`          | ✅ Feito |
+| authService                      | `src/services/authService.ts`  | ✅ Feito |
+| AuthContext                      | `src/contexts/AuthContext.tsx` | ✅ Feito |
+| useAuth hook                     | `src/hooks/useAuth.ts`         | ✅ Feito |
+
+#### Sprint 1 — Autenticação, Layout e Infraestrutura 🚧 Em andamento
+
+| Tarefa                                                               | Arquivo                                                     | Status     |
+| -------------------------------------------------------------------- | ----------------------------------------------------------- | ---------- |
+| Instalar `react-hook-form` + `zod` + `@hookform/resolvers`           | `package.json`                                              | ⬜ A fazer |
+| LoginPage (validação com zod)                                        | `src/pages/auth/LoginPage.tsx`                              | ⬜ A fazer |
+| RegisterPage (Stepper 2 etapas)                                      | `src/pages/auth/RegisterPage.tsx`                           | ⬜ A fazer |
+| PrivateRoute + StaffRoute                                            | `src/components/shared/PrivateRoute.tsx` + `StaffRoute.tsx` | ⬜ A fazer |
+| Roteamento completo                                                  | `src/App.tsx`                                               | ⬜ A fazer |
+| ThemeProvider + AuthProvider + Router no main.tsx                    | `src/main.tsx`                                              | ⬜ A fazer |
+| AppShell                                                             | `src/components/layout/AppShell.tsx`                        | ⬜ A fazer |
+| AppSidebar (navegação por role)                                      | `src/components/layout/AppSidebar.tsx`                      | ⬜ A fazer |
+| AppHeader (usuário + logout)                                         | `src/components/layout/AppHeader.tsx`                       | ⬜ A fazer |
+| StatusChip                                                           | `src/components/shared/StatusChip.tsx`                      | ⬜ A fazer |
+| ConfirmDialog                                                        | `src/components/shared/ConfirmDialog.tsx`                   | ⬜ A fazer |
+| LoadingOverlay                                                       | `src/components/shared/LoadingOverlay.tsx`                  | ⬜ A fazer |
+| EmptyState                                                           | `src/components/shared/EmptyState.tsx`                      | ⬜ A fazer |
+| PageHeader                                                           | `src/components/shared/PageHeader.tsx`                      | ⬜ A fazer |
+| Refresh Token silencioso no interceptor 401 (access expira em 60min) | `src/services/api.ts`                                       | ⬜ A fazer |
+| Sistema global de Snackbar (sucesso/erro/403 da API)                 | `src/contexts/SnackbarContext.tsx` + hook                   | ⬜ A fazer |
+| clienteService (buscar clientes para Autocomplete do formulário)     | `src/services/clienteService.ts`                            | ⬜ A fazer |
+| useClientes hook                                                     | `src/hooks/useClientes.ts`                                  | ⬜ A fazer |
+
+> **Nota — Refresh Token:** O interceptor do `api.ts` já tenta o refresh no 401, mas precisa ser validado contra o token de 60min de acesso e 1 dia de refresh do SimpleJWT. Verificar se a lógica cobre corretamente o retry da requisição original de forma silenciosa.
+
+> **Nota — Snackbar:** O `SnackbarContext` deve capturar erros 400 (validação do Django — formato `{ campo: ["msg"] }`) e 403 (acesso negado) e exibir via `MUI Snackbar + Alert`. Componentes nunca devem exibir alertas diretamente.
+
+#### Sprint 2 — Calibração de Equipamentos ⬜ Pendente
+
+| Tarefa                                                         | Arquivo                                       | Status     |
+| -------------------------------------------------------------- | --------------------------------------------- | ---------- |
+| calibracaoService (baterias, leituras, pontos)                 | `src/services/calibracaoService.ts`           | ⬜ A fazer |
+| useCalibracao hook                                             | `src/hooks/useCalibracao.ts`                  | ⬜ A fazer |
+| CalibracaoListPage (Tabs por equipamento)                      | `src/pages/calibracao/CalibracaoListPage.tsx` | ⬜ A fazer |
+| CalibracaoFormPage (pontos + equação R² em tempo real)         | `src/pages/calibracao/CalibracaoFormPage.tsx` | ⬜ A fazer |
+| Toggle ativo/inativo da bateria (`BateriaCalibracao.ativo`)    | `CalibracaoListPage` ou `CalibracaoFormPage`  | ⬜ A fazer |
+| Exibir `equacao_formada` (ex: `y = 0.123x + 0.05`) nos painéis | `CalibracaoListPage` + `LaudoFormPage`        | ⬜ A fazer |
+
+> **Nota — `ativo`:** Apenas uma bateria por equipamento/elemento deve estar ativa por vez. O Switch do MUI deve fazer `PATCH { ativo: true }` na bateria selecionada. O back-end pode ou não desativar as demais automaticamente — verificar comportamento da API.
+
+> **Nota — `equacao_formada`:** Esta string é uma `property` read-only do model Django. Deve ser exibida sempre que o técnico estiver inserindo leituras brutas, garantindo rastreabilidade da curva de regressão aplicada.
+
+---
+
+### Sabrina — `feat/sabrina/laudos`
+
+> **Pré-requisito:** PR da Sprint 0 do Gabriel mergeado em `dev`. Antes de começar: `git merge dev`.
+
+#### Sprint 1 — Laudos (Serviços, Hooks e Listagem) ⬜ Pendente
+
+| Tarefa                                                                          | Arquivo                                 | Status     |
+| ------------------------------------------------------------------------------- | --------------------------------------- | ---------- |
+| laudoService (listar, buscar, criar, editar, deletar)                           | `src/services/laudoService.ts`          | ⬜ A fazer |
+| laudoService — download PDF com `responseType: 'blob'` + helper de URL          | `src/services/laudoService.ts`          | ⬜ A fazer |
+| useLaudos hook (lista paginada com `count/next/previous`)                       | `src/hooks/useLaudos.ts`                | ⬜ A fazer |
+| useLaudo hook (CRUD individual)                                                 | `src/hooks/useLaudo.ts`                 | ⬜ A fazer |
+| DashboardPage (cards resumo + últimos 5 laudos)                                 | `src/pages/dashboard/DashboardPage.tsx` | ⬜ A fazer |
+| LaudosListPage (tabela paginada, staff vs cliente)                              | `src/pages/laudos/LaudosListPage.tsx`   | ⬜ A fazer |
+| Ocultação dinâmica de "Novo Laudo", "Editar", "Excluir" para `is_staff = false` | `LaudosListPage` + `LaudoDetailPage`    | ⬜ A fazer |
+
+> **Nota — Paginação:** O back-end usa `PAGE_SIZE: 10` e responde `{ count, next, previous, results[] }`. O hook `useLaudos` deve manter o estado de `page` e passar `?page=N` na query. O `TablePagination` do MUI deve usar `count` do servidor, não `results.length`.
+
+> **Nota — PDF:** Usar `axios.get(url, { responseType: 'blob' })`. Converter o blob com `URL.createObjectURL()` e acionar o download via elemento `<a>` programático ou abrir em nova aba. Nunca navegar direto para a URL sem o token de autorização.
+
+#### Sprint 2 — Laudos (Detalhe e Formulário) ⬜ Pendente
+
+| Tarefa                                                                                             | Arquivo                                | Status     |
+| -------------------------------------------------------------------------------------------------- | -------------------------------------- | ---------- |
+| LaudoDetailPage (Accordions por equipamento + botão PDF)                                           | `src/pages/laudos/LaudoDetailPage.tsx` | ⬜ A fazer |
+| LaudoDetailPage — seção de destaque para índices calculados (`sb`, `t`, `T`, `V`, `m`, `c_org`)    | `src/pages/laudos/LaudoDetailPage.tsx` | ⬜ A fazer |
+| LaudoDetailPage — Accordion de Granulometria (`areia`, `argila`, `silte`)                          | `src/pages/laudos/LaudoDetailPage.tsx` | ⬜ A fazer |
+| LaudoFormPage (Stepper 6 etapas, staff only, zod + hook-form)                                      | `src/pages/laudos/LaudoFormPage.tsx`   | ⬜ A fazer |
+| LaudoFormPage — Step de leituras brutas (`LeituraEquipamento`: `leitura_bruta` + `fator_diluicao`) | `src/pages/laudos/LaudoFormPage.tsx`   | ⬜ A fazer |
+| LaudoFormPage — Step de Granulometria (`areia`, `argila`, `silte` — leitura direta)                | `src/pages/laudos/LaudoFormPage.tsx`   | ⬜ A fazer |
+| LaudoFormPage — consultar baterias ativas do dia antes de exibir o formulário de leituras          | `src/hooks/useLaudo.ts`                | ⬜ A fazer |
+
+> **Nota — Leituras Brutas:** O back-end não recebe valores prontos de `ca`, `mg`, etc. diretamente. O fluxo correto é: (1) Staff seleciona a bateria de calibração ativa do dia; (2) insere `leitura_bruta` e `fator_diluicao` no model `LeituraEquipamento`; (3) o back-end aplica a equação da reta e armazena o resultado em `AnaliseSolo`. O LaudoFormPage deve integrar esse fluxo no Stepper.
+
+> **Nota — Índices Calculados:** `sb`, `t`, `T_maiusculo`, `V`, `m`, `ca_mg`, `ca_k`, `mg_k`, `c_org` são todos calculados automaticamente via `pre_save signal` no back-end. São **somente leitura** no frontend — nunca incluir em formulários de criação/edição. Exibir em destaque no LaudoDetailPage pois são os valores finais entregues ao produtor rural.
 
 ---
 
@@ -1255,6 +1339,25 @@ Antes de dar PR como pronto, verificar:
 - [ ] Tema MUI aplicado (sem cores hardcoded fora do theme)
 - [ ] Branch atualizada com `dev` antes de abrir PR (`git merge dev`)
 - [ ] Sem conflito com os arquivos da outra dev
+
+---
+
+## Diretrizes Adicionais do Projeto (abril/2026)
+
+- **Testar cada página após criá-la (testes automatizados obrigatórios):**
+  - Após implementar cada página ou componente significativo, devem ser gerados testes automatizados antes de avançar para a próxima tarefa.
+  - Stack de testes: **Vitest** (runner) + **@testing-library/react** (renderização) + **@testing-library/user-event** (interações) + **msw** (mock de API).
+  - Cobertura mínima por página:
+    - **Schemas/validators**: testar casos válidos, inválidos e edge cases com Vitest puro.
+    - **Hooks customizados**: testar lógica de estado com `renderHook`.
+    - **Páginas**: testar fluxo principal (happy path) e tratamento de erro (campo vazio, API retorna erro).
+  - Testes ficam em `src/__tests__/` espelhando a estrutura de `src/`.
+  - O checklist de entrega de cada feature deve incluir os testes automatizados passando.
+
+- **Páginas devem obedecer estritamente ao SOLID:**
+  - Todas as páginas (ex: LoginPage, RegisterPage, Dashboard, etc) devem ser implementadas seguindo rigorosamente os princípios do SOLID, conforme detalhado na seção [Arquitetura SOLID](#3-arquitetura-solid-aplicada-ao-react).
+  - Não é permitido misturar responsabilidades (ex: lógica de autenticação, chamadas HTTP, renderização e validação devem estar separadas em hooks/services/schemas/componentes distintos).
+  - O código deve ser extensível, testável e de fácil manutenção, evitando acoplamento e interfaces "gordas".
 
 ---
 

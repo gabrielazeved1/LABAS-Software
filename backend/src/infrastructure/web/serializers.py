@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from src.infrastructure.database.models import Cliente, AnaliseSolo
 
 
@@ -30,6 +30,12 @@ class UserRegistrationSerializer(serializers.Serializer):
             raise serializers.ValidationError("Este nome de usuario ja existe")
         return value
 
+    def validate_codigo_cliente(self, value):
+        """Impede a duplicidade de codigo de cliente no sistema"""
+        if Cliente.objects.filter(codigo=value).exists():
+            raise serializers.ValidationError("Ja existe um cliente com este codigo")
+        return value
+
     def create(self, validated_data):
         """Executa a persistencia de dados de forma protegida"""
         # Garante que ou ambos sao criados ou nenhum dado e salvo no banco
@@ -41,14 +47,19 @@ class UserRegistrationSerializer(serializers.Serializer):
                 password=validated_data["password"],
             )
 
-            # Vincula o perfil tecnico do cliente ao usuario recem criado
-            Cliente.objects.create(
-                usuario=user,
-                nome=validated_data["nome_cliente"],
-                codigo=validated_data["codigo_cliente"],
-                municipio=validated_data.get("municipio", ""),
-                area=validated_data.get("area", ""),
-            )
+            try:
+                # Vincula o perfil tecnico do cliente ao usuario recem criado
+                Cliente.objects.create(
+                    usuario=user,
+                    nome=validated_data["nome_cliente"],
+                    codigo=validated_data["codigo_cliente"],
+                    municipio=validated_data.get("municipio", ""),
+                    area=validated_data.get("area", ""),
+                )
+            except IntegrityError:
+                raise serializers.ValidationError(
+                    {"codigo_cliente": "Ja existe um cliente com este codigo"}
+                )
         return validated_data
 
 

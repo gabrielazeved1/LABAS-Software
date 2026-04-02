@@ -17,6 +17,8 @@ urlpatterns = [
     # Endpoints do SimpleJWT para geracao e renovacao de tokens de acesso
     path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    # Retorna os dados do usuario autenticado (usado pelo frontend para restaurar sessao)
+    path("me/", views.MeView.as_view(), name="me"),
     # ---------------------------------------------------------
     # 2 GESTAO DE LAUDOS RECURSOS PROTEGIDOS
     # ---------------------------------------------------------
