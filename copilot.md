@@ -820,20 +820,20 @@ Gabriel constrói a **fundação técnica** primeiro (autenticação, rotas, inf
 
 **Domínio:** Infraestrutura, autenticação e setup global
 
-| Sprint | Entrega | Arquivos |
-|---|---|---|
-| 0 | Setup do projeto Vite + instalação de dependências | `package.json`, `vite.config.ts`, `tsconfig.json` |
-| 0 | Configuração do MUI Theme | `src/theme/index.ts` |
-| 0 | Todos os tipos TypeScript | `src/types/*.ts` |
-| 0 | Instância Axios com interceptors JWT | `src/services/api.ts` |
-| 0 | AuthContext + useAuth hook | `src/contexts/AuthContext.tsx`, `src/hooks/useAuth.ts` |
-| 0 | `authService.ts` (login, refresh, register) | `src/services/authService.ts` |
-| 1 | Página de Login com validação | `src/pages/auth/LoginPage.tsx` |
-| 1 | Página de Register (Stepper 2 etapas) | `src/pages/auth/RegisterPage.tsx` |
-| 1 | Roteamento completo + PrivateRoute + StaffRoute | `src/App.tsx` |
-| 1 | AppShell (layout base: sidebar + header) | `src/components/layout/*.tsx` |
-| 1 | Componentes compartilhados | `src/components/shared/*.tsx` |
-| 2 | Página de Calibração de Equipamentos (staff) | `src/pages/calibracao/*.tsx`, `src/hooks/useCalibracao.ts`, `src/services/calibracaoService.ts` |
+| Sprint | Entrega                                            | Arquivos                                                                                        |
+| ------ | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| 0      | Setup do projeto Vite + instalação de dependências | `package.json`, `vite.config.ts`, `tsconfig.json`                                               |
+| 0      | Configuração do MUI Theme                          | `src/theme/index.ts`                                                                            |
+| 0      | Todos os tipos TypeScript                          | `src/types/*.ts`                                                                                |
+| 0      | Instância Axios com interceptors JWT               | `src/services/api.ts`                                                                           |
+| 0      | AuthContext + useAuth hook                         | `src/contexts/AuthContext.tsx`, `src/hooks/useAuth.ts`                                          |
+| 0      | `authService.ts` (login, refresh, register)        | `src/services/authService.ts`                                                                   |
+| 1      | Página de Login com validação                      | `src/pages/auth/LoginPage.tsx`                                                                  |
+| 1      | Página de Register (Stepper 2 etapas)              | `src/pages/auth/RegisterPage.tsx`                                                               |
+| 1      | Roteamento completo + PrivateRoute + StaffRoute    | `src/App.tsx`                                                                                   |
+| 1      | AppShell (layout base: sidebar + header)           | `src/components/layout/*.tsx`                                                                   |
+| 1      | Componentes compartilhados                         | `src/components/shared/*.tsx`                                                                   |
+| 2      | Página de Calibração de Equipamentos (staff)       | `src/pages/calibracao/*.tsx`, `src/hooks/useCalibracao.ts`, `src/services/calibracaoService.ts` |
 
 **Sprint 0 é bloqueante para Sabrina** — Gabriel deve entregar o PR da Sprint 0 para `dev` antes de Sabrina iniciar.
 
@@ -845,14 +845,14 @@ Gabriel constrói a **fundação técnica** primeiro (autenticação, rotas, inf
 
 > **Pré-requisito:** PR da Sprint 0 do Gabriel mergeado em `dev` e Sabrina deve fazer `git merge dev` em sua branch antes de começar.
 
-| Sprint | Entrega | Arquivos |
-|---|---|---|
-| 1 | `laudoService.ts` (listar, buscar, criar, editar, deletar) | `src/services/laudoService.ts` |
-| 1 | `useLaudos.ts` e `useLaudo.ts` hooks | `src/hooks/useLaudos.ts`, `src/hooks/useLaudo.ts` |
-| 1 | Dashboard (cards de resumo + últimos laudos) | `src/pages/dashboard/DashboardPage.tsx` |
-| 1 | Lista de Laudos com paginação e filtro por N Lab | `src/pages/laudos/LaudosListPage.tsx` |
-| 2 | Detalhe do Laudo (Accordions por equipamento + PDF) | `src/pages/laudos/LaudoDetailPage.tsx` |
-| 2 | Formulário de Laudo com Stepper 6 etapas (staff) | `src/pages/laudos/LaudoFormPage.tsx` |
+| Sprint | Entrega                                                    | Arquivos                                          |
+| ------ | ---------------------------------------------------------- | ------------------------------------------------- |
+| 1      | `laudoService.ts` (listar, buscar, criar, editar, deletar) | `src/services/laudoService.ts`                    |
+| 1      | `useLaudos.ts` e `useLaudo.ts` hooks                       | `src/hooks/useLaudos.ts`, `src/hooks/useLaudo.ts` |
+| 1      | Dashboard (cards de resumo + últimos laudos)               | `src/pages/dashboard/DashboardPage.tsx`           |
+| 1      | Lista de Laudos com paginação e filtro por N Lab           | `src/pages/laudos/LaudosListPage.tsx`             |
+| 2      | Detalhe do Laudo (Accordions por equipamento + PDF)        | `src/pages/laudos/LaudoDetailPage.tsx`            |
+| 2      | Formulário de Laudo com Stepper 6 etapas (staff)           | `src/pages/laudos/LaudoFormPage.tsx`              |
 
 ---
 
@@ -874,6 +874,7 @@ Gabriel trabalha em:              Sabrina trabalha em:
 ```
 
 **Arquivos compartilhados (apenas leitura para Sabrina):**
+
 - `src/types/*.ts` — Sabrina importa, Gabriel mantém
 - `src/services/api.ts` — Sabrina importa, Gabriel mantém
 - `src/contexts/AuthContext.tsx` — Sabrina consume via hook `useAuth()`
@@ -923,28 +924,35 @@ export const laudoService = {
 // Mock data local — usar apenas para desenvolvimento
 const MOCK_LAUDOS: AnaliseSolo[] = [
   {
-    n_lab: '2026/001',
-    cliente: { codigo: 'CLI001', nome: 'João da Silva', municipio: 'Uberlândia', area: 'Fazenda Boa Vista' },
-    data_entrada: '2026-04-01',
+    n_lab: "2026/001",
+    cliente: {
+      codigo: "CLI001",
+      nome: "João da Silva",
+      municipio: "Uberlândia",
+      area: "Fazenda Boa Vista",
+    },
+    data_entrada: "2026-04-01",
     data_saida: null,
-    ph_agua: 6.2, ph_cacl2: 5.8, ph_kcl: 5.5,
+    ph_agua: 6.2,
+    ph_cacl2: 5.8,
+    ph_kcl: 5.5,
     // ... restante dos campos como null
-  }
+  },
 ];
 ```
 
 ### Ordem de integração recomendada
 
-| # | Quem | Feature | Depende de |
-|---|---|---|---|
-| 1 | Gabriel | `POST /token/` (login) | — |
-| 2 | Gabriel | `POST /register/` (cadastro) | — |
-| 3 | Gabriel | Rotas protegidas com token | Item 1 |
-| 4 | Sabrina | `GET /meus-laudos/` (listar) | Item 3 |
-| 5 | Sabrina | `GET /meus-laudos/:nLab/` (detalhe) | Item 4 |
-| 6 | Gabriel | `POST/PATCH/DELETE /meus-laudos/` (staff) | Item 3 |
-| 7 | Sabrina | `GET /meus-laudos/:nLab/pdf/` (PDF) | Item 5 |
-| 8 | Gabriel | Baterias de calibração | Item 3 |
+| #   | Quem    | Feature                                   | Depende de |
+| --- | ------- | ----------------------------------------- | ---------- |
+| 1   | Gabriel | `POST /token/` (login)                    | —          |
+| 2   | Gabriel | `POST /register/` (cadastro)              | —          |
+| 3   | Gabriel | Rotas protegidas com token                | Item 1     |
+| 4   | Sabrina | `GET /meus-laudos/` (listar)              | Item 3     |
+| 5   | Sabrina | `GET /meus-laudos/:nLab/` (detalhe)       | Item 4     |
+| 6   | Gabriel | `POST/PATCH/DELETE /meus-laudos/` (staff) | Item 3     |
+| 7   | Sabrina | `GET /meus-laudos/:nLab/pdf/` (PDF)       | Item 5     |
+| 8   | Gabriel | Baterias de calibração                    | Item 3     |
 
 ---
 
@@ -952,14 +960,14 @@ const MOCK_LAUDOS: AnaliseSolo[] = [
 
 ### Categorias de erro
 
-| Categoria | Origem | Como tratar |
-|---|---|---|
-| **Validação de formulário** | Frontend (zod) | Mensagem em vermelho embaixo do campo (`helperText` no MUI) |
-| **Erro de API (4xx)** | Backend retorna JSON com erros | `Alert` vermelho com a mensagem do DRF |
-| **Erro de rede (500 / sem internet)** | Axios não consegue conectar | `Alert` genérico "Erro de conexão. Tente novamente." |
-| **Token expirado (401)** | Axios interceptor | Renova automaticamente; se falhar → logout + redirect |
-| **Acesso negado (403)** | Backend | Redireciona para `/dashboard` com `Alert` de permissão negada |
-| **Não encontrado (404)** | Backend | Exibe página `NotFound` ou mensagem inline |
+| Categoria                             | Origem                         | Como tratar                                                   |
+| ------------------------------------- | ------------------------------ | ------------------------------------------------------------- |
+| **Validação de formulário**           | Frontend (zod)                 | Mensagem em vermelho embaixo do campo (`helperText` no MUI)   |
+| **Erro de API (4xx)**                 | Backend retorna JSON com erros | `Alert` vermelho com a mensagem do DRF                        |
+| **Erro de rede (500 / sem internet)** | Axios não consegue conectar    | `Alert` genérico "Erro de conexão. Tente novamente."          |
+| **Token expirado (401)**              | Axios interceptor              | Renova automaticamente; se falhar → logout + redirect         |
+| **Acesso negado (403)**               | Backend                        | Redireciona para `/dashboard` com `Alert` de permissão negada |
+| **Não encontrado (404)**              | Backend                        | Exibe página `NotFound` ou mensagem inline                    |
 
 ---
 
@@ -968,10 +976,10 @@ const MOCK_LAUDOS: AnaliseSolo[] = [
 ```ts
 // src/hooks/useLaudos.ts — padrão de estado de erro
 
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import { laudoService } from '../services/laudoService';
-import type { AnaliseSolo } from '../types/analise';
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { laudoService } from "../services/laudoService";
+import type { AnaliseSolo } from "../types/analise";
 
 interface UseLaudosState {
   laudos: AnaliseSolo[];
@@ -982,21 +990,30 @@ interface UseLaudosState {
 
 export const useLaudos = (page = 1) => {
   const [state, setState] = useState<UseLaudosState>({
-    laudos: [], loading: true, error: null, total: 0,
+    laudos: [],
+    loading: true,
+    error: null,
+    total: 0,
   });
 
   useEffect(() => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
+    setState((prev) => ({ ...prev, loading: true, error: null }));
 
-    laudoService.listar(page)
+    laudoService
+      .listar(page)
       .then(({ data }) => {
-        setState({ laudos: data.results, loading: false, error: null, total: data.count });
+        setState({
+          laudos: data.results,
+          loading: false,
+          error: null,
+          total: data.count,
+        });
       })
       .catch((err) => {
         const msg = axios.isAxiosError(err)
-          ? err.response?.data?.detail ?? 'Erro ao carregar laudos.'
-          : 'Erro de conexão.';
-        setState(prev => ({ ...prev, loading: false, error: msg }));
+          ? (err.response?.data?.detail ?? "Erro ao carregar laudos.")
+          : "Erro de conexão.";
+        setState((prev) => ({ ...prev, loading: false, error: msg }));
       });
   }, [page]);
 
@@ -1010,18 +1027,19 @@ export const useLaudos = (page = 1) => {
 
 ```tsx
 // Exibição padronizada — use sempre este padrão
-import { Alert, CircularProgress, Box } from '@mui/material';
+import { Alert, CircularProgress, Box } from "@mui/material";
 
 const LaudosListPage = () => {
   const { laudos, loading, error } = useLaudos();
 
   if (loading) return <LoadingOverlay />;
 
-  if (error) return (
-    <Alert severity="error" sx={{ m: 2 }}>
-      {error}
-    </Alert>
-  );
+  if (error)
+    return (
+      <Alert severity="error" sx={{ m: 2 }}>
+        {error}
+      </Alert>
+    );
 
   // ... render normal
 };
@@ -1047,10 +1065,10 @@ Para exibir os erros por campo no formulário:
 // Utilitário para converter erros do DRF para react-hook-form
 export function applyDrfErrors<T extends Record<string, unknown>>(
   errors: Record<string, string[]>,
-  setError: (field: keyof T, error: { message: string }) => void
+  setError: (field: keyof T, error: { message: string }) => void,
 ) {
   Object.entries(errors).forEach(([field, messages]) => {
-    if (field !== 'non_field_errors') {
+    if (field !== "non_field_errors") {
       setError(field as keyof T, { message: messages[0] });
     }
   });
@@ -1102,4 +1120,4 @@ Antes de dar PR como pronto, verificar:
 
 ---
 
-*Este arquivo é o contrato técnico do frontend do LABAS. Qualquer mudança de arquitetura deve ser discutida com o tech lead antes de implementar.*
+_Este arquivo é o contrato técnico do frontend do LABAS. Qualquer mudança de arquitetura deve ser discutida com o tech lead antes de implementar._
