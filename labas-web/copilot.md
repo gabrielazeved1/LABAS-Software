@@ -9,6 +9,98 @@
 
 ---
 
+## Índice
+
+| #   | Seção                                                                               |
+| --- | ----------------------------------------------------------------------------------- |
+| 0   | [Fluxo de Branches (Git)](#0-fluxo-de-branches-git)                                 |
+| 1   | [Contexto do Sistema](#1-contexto-do-sistema)                                       |
+| 2   | [Paleta de Cores (MUI Theme)](#2-paleta-de-cores-mui-theme)                         |
+| 3   | [Arquitetura SOLID](#3-arquitetura-solid-aplicada-ao-react)                         |
+| 4   | [Estrutura de Pastas](#4-estrutura-de-pastas)                                       |
+| 5   | [Tipos TypeScript](#5-tipos-typescript-espelho-dos-models-django)                   |
+| 6   | [Serviços de API](#6-serviços-de-api)                                               |
+| 7   | [Mapa de Páginas](#7-mapa-de-páginas)                                               |
+| 8   | [Roteamento e Proteção de Rotas](#8-roteamento-e-proteção-de-rotas)                 |
+| 9   | [Autenticação — Fluxo Completo](#9-autenticação--fluxo-completo)                    |
+| 10  | [Convenções de Código](#10-convenções-de-código)                                    |
+| 11  | [Dependências Recomendadas](#11-dependências-recomendadas)                          |
+| 12  | [Inicialização do Projeto](#12-inicialização-do-projeto)                            |
+| 13  | [Mapeamento Backend → Frontend](#13-mapeamento-backend--frontend-referência-rápida) |
+| 14  | [Checklist de Entrega por Feature](#14-checklist-de-entrega-por-feature)            |
+| 15  | [Divisão de Responsabilidades](#15-divisão-de-responsabilidades)                    |
+| 16  | [Estratégia de Integração com a API](#16-estratégia-de-integração-com-a-api)        |
+| 17  | [Tratamento de Erros](#17-tratamento-de-erros)                                      |
+| 18  | [Checklist de Entrega (Expandido)](#18-checklist-de-entrega-por-feature)            |
+
+---
+
+## Status das Sprints
+
+### Sprint 0 — Fundação (`feat/gabriel/foundation`)
+
+| Tarefa                     | Arquivo                                      | Status     |
+| -------------------------- | -------------------------------------------- | ---------- |
+| Estrutura de pastas `src/` | —                                            | ✅ Feito   |
+| MUI Theme                  | `src/theme/index.ts`                         | ⬜ A fazer |
+| Axios + interceptors JWT   | `src/services/api.ts`                        | ⬜ A fazer |
+| Tipos base                 | `src/types/auth.ts` + `src/types/cliente.ts` | ⬜ A fazer |
+| AuthContext                | `src/contexts/AuthContext.tsx`               | ⬜ A fazer |
+| authService                | `src/services/authService.ts`                | ⬜ A fazer |
+
+### Sprint 1 — Autenticação e Layout
+
+| Tarefa                                                            | Arquivo                           | Status     |
+| ----------------------------------------------------------------- | --------------------------------- | ---------- |
+| LoginPage                                                         | `src/pages/auth/LoginPage.tsx`    | ⬜ A fazer |
+| RegisterPage                                                      | `src/pages/auth/RegisterPage.tsx` | ⬜ A fazer |
+| Roteamento + PrivateRoute + StaffRoute                            | `src/App.tsx`                     | ⬜ A fazer |
+| AppShell + AppSidebar + AppHeader                                 | `src/components/layout/*.tsx`     | ⬜ A fazer |
+| StatusChip, ConfirmDialog, LoadingOverlay, EmptyState, PageHeader | `src/components/shared/*.tsx`     | ⬜ A fazer |
+
+---
+
+## 0. Fluxo de Branches (Git)
+
+```
+main          ← produção / código estável e validado
+  └── dev     ← integração contínua (PRs de feature entram aqui)
+        ├── feat/gabriel/foundation   ← Gabriel: infraestrutura + autenticação
+        └── feat/sabrina/laudos       ← Sabrina: features de negócio
+```
+
+### Regras de branch
+
+| Branch           | Quem faz push       | Como entra na próxima                         |
+| ---------------- | ------------------- | --------------------------------------------- |
+| `main`           | Ninguém diretamente | PR a partir de `dev` (revisão obrigatória)    |
+| `dev`            | Ninguém diretamente | PR a partir de `feat/*`                       |
+| `feat/gabriel/*` | Gabriel             | PR para `dev` quando a feature estiver pronta |
+| `feat/sabrina/*` | Sabrina             | PR para `dev` quando a feature estiver pronta |
+
+### Convenção de commits
+
+Usar **Conventional Commits** para manter o histórico limpo:
+
+```
+feat: adiciona página de login
+fix: corrige validação do campo n_lab
+chore: instala dependências do MUI
+refactor: extrai useLaudos para hook próprio
+style: ajusta espaçamento do AppHeader
+test: adiciona testes do hook useAuth
+```
+
+### Saúde das branches (rotina)
+
+```bash
+# Antes de começar a trabalhar todo dia:
+git checkout dev && git pull origin dev
+git checkout feat/gabriel/foundation && git merge dev  # manter atualizada
+```
+
+---
+
 ## 1. Contexto do Sistema
 
 O LABAS é um sistema do Laboratório de Análise de Solo e Tecido Vegetal — UFU (Universidade Federal de Uberlândia), desenvolvido como projeto de extensão em parceria com o curso de Agronomia.
@@ -34,74 +126,158 @@ A identidade visual é institucional/científica, baseada nas cores da UFU e do 
 
 ```ts
 // src/theme/index.ts
+// src/theme/index.ts
 import { createTheme } from "@mui/material/styles";
 
 export const theme = createTheme({
   palette: {
     mode: "light",
+
     primary: {
-      main: "#1A5276", // Azul UFU profundo
-      light: "#2E86C1", // Azul médio — botões hover
-      dark: "#0E2F44", // Azul escuro — sidebar, header
+      main: "#233b1a",       // base institucional
+      light: "#476546",      // variação suave
+      dark: "#1a2c14",       // versão mais escura
       contrastText: "#FFFFFF",
     },
+
     secondary: {
-      main: "#2E7D32", // Verde agrônomo
-      light: "#4CAF50", // Verde claro — badges de status OK
-      dark: "#1B5E20", // Verde escuro — ênfase
+      main: "#476546",       // apoio visual (cards, elementos secundários)
+      light: "#6d8262",
+      dark: "#2f4430",
       contrastText: "#FFFFFF",
     },
+
+    success: {
+      main: "#2e7d32",
+    },
+
     warning: {
-      main: "#F9A825", // Âmbar terra — alertas e destaques
+      main: "#ed6c02",
     },
+
     error: {
-      main: "#C62828", // Vermelho — valores críticos
+      main: "#d32f2f",
     },
+
+    info: {
+      main: "#0288d1",
+    },
+
     background: {
-      default: "#F4F6F8", // Cinza claríssimo — fundo geral
-      paper: "#FFFFFF", // Branco — cards, tabelas
+      default: "#F5F5F3",    // fundo neutro leve
+      paper: "#FFFFFF",
     },
+
     text: {
-      primary: "#1C2833", // Quase preto — texto principal
-      secondary: "#5D6D7E", // Cinza médio — labels, subtítulos
+      primary: "#1F1F1F",
+      secondary: "#6d8262",  // muted
     },
-    divider: "#D5D8DC", // Cinza divisor (similar ao #f2f2f2 do PDF)
+
+    divider: "#a7b698",
+
+    grey: {
+      300: "#a7b698",
+      500: "#6d8262",
+    },
   },
+
   typography: {
     fontFamily: '"Inter", "Roboto", "Arial", sans-serif',
+
     h4: { fontWeight: 700 },
     h5: { fontWeight: 600 },
     h6: { fontWeight: 600 },
-    body2: { color: "#5D6D7E" },
+
+    body1: {
+      color: "#1F1F1F",
+    },
+
+    body2: {
+      color: "#6d8262",
+    },
   },
+
   shape: {
     borderRadius: 8,
   },
+
   components: {
     MuiButton: {
       styleOverrides: {
-        root: { textTransform: "none", fontWeight: 600 },
+        root: {
+          textTransform: "none",
+          fontWeight: 600,
+          borderRadius: 8,
+        },
       },
     },
+
     MuiTableHead: {
       styleOverrides: {
         root: {
           "& th": {
-            backgroundColor: "#1A5276",
+            backgroundColor: "#233b1a",
             color: "#FFFFFF",
             fontWeight: 700,
           },
         },
       },
     },
+
+    MuiTableCell: {
+      styleOverrides: {
+        root: {
+          borderColor: "#a7b698",
+        },
+      },
+    },
+
     MuiChip: {
       styleOverrides: {
-        root: { fontWeight: 600 },
+        root: {
+          fontWeight: 600,
+        },
+      },
+    },
+
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          "& fieldset": {
+            borderColor: "#a7b698",
+          },
+          "&:hover fieldset": {
+            borderColor: "#336006",
+          },
+          "&.Mui-focused fieldset": {
+            borderColor: "#233b1a",
+          },
+        },
+      },
+    },
+
+    MuiAlert: {
+      styleOverrides: {
+        standardSuccess: {
+          backgroundColor: "#2e7d32",
+          color: "#fff",
+        },
+        standardWarning: {
+          backgroundColor: "#ed6c02",
+          color: "#fff",
+        },
+        standardError: {
+          backgroundColor: "#d32f2f",
+          color: "#fff",
+        },
+        standardInfo: {
+          backgroundColor: "#0288d1",
+          color: "#fff",
+        },
       },
     },
   },
 });
-```
 
 ### Referência Rápida de Cores
 
@@ -129,9 +305,11 @@ export const theme = createTheme({
 - Um arquivo de types contém **apenas as interfaces** de um domínio
 
 ```
+
 ❌ ERRADO: Componente que faz fetch E renderiza E valida formulário
-✅ CERTO:  useLaudos() faz o fetch | LaudoForm renderiza | validators/laudo.ts valida
-```
+✅ CERTO: useLaudos() faz o fetch | LaudoForm renderiza | validators/laudo.ts valida
+
+````
 
 ### O — Open/Closed (Aberto/Fechado)
 
@@ -142,7 +320,7 @@ export const theme = createTheme({
 <StatusChip status="pendente" />
 <StatusChip status="concluido" />
 <StatusChip status="cancelado" />
-```
+````
 
 ### L — Liskov Substitution (Substituição de Liskov)
 
@@ -764,6 +942,319 @@ Antes de dar PR como pronto, verificar:
 - [ ] Responsividade com `Grid` e breakpoints do MUI
 - [ ] Props tipadas (sem props desnecessárias — respeitar ISP)
 - [ ] Tema MUI aplicado (sem cores hardcoded fora do theme)
+- [ ] Testes automatizados para a feature (unitários e/ou de integração)
+
+---
+
+## 15. Divisão de Responsabilidades
+
+### Por que dividir assim?
+
+Gabriel constrói a **fundação técnica** primeiro (autenticação, rotas, infraestrutura de API, tema). Sabrina depende dessa fundação para trabalhar. Por isso, há uma **dependência de sequência** na Sprint 0, mas após isso **ambos trabalham em paralelo sem conflito**, pois atuam em arquivos completamente diferentes.
+
+---
+
+### Gabriel — Branch: `feat/gabriel/foundation`
+
+**Domínio:** Infraestrutura, autenticação e setup global
+
+| Sprint | Entrega                                            | Arquivos                                                                                        |
+| ------ | -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| 0      | Setup do projeto Vite + instalação de dependências | `package.json`, `vite.config.ts`, `tsconfig.json`                                               |
+| 0      | Configuração do MUI Theme                          | `src/theme/index.ts`                                                                            |
+| 0      | Todos os tipos TypeScript                          | `src/types/*.ts`                                                                                |
+| 0      | Instância Axios com interceptors JWT               | `src/services/api.ts`                                                                           |
+| 0      | AuthContext + useAuth hook                         | `src/contexts/AuthContext.tsx`, `src/hooks/useAuth.ts`                                          |
+| 0      | `authService.ts` (login, refresh, register)        | `src/services/authService.ts`                                                                   |
+| 1      | Página de Login com validação                      | `src/pages/auth/LoginPage.tsx`                                                                  |
+| 1      | Página de Register (Stepper 2 etapas)              | `src/pages/auth/RegisterPage.tsx`                                                               |
+| 1      | Roteamento completo + PrivateRoute + StaffRoute    | `src/App.tsx`                                                                                   |
+| 1      | AppShell (layout base: sidebar + header)           | `src/components/layout/*.tsx`                                                                   |
+| 1      | Componentes compartilhados                         | `src/components/shared/*.tsx`                                                                   |
+| 2      | Página de Calibração de Equipamentos (staff)       | `src/pages/calibracao/*.tsx`, `src/hooks/useCalibracao.ts`, `src/services/calibracaoService.ts` |
+
+**Sprint 0 é bloqueante para Sabrina** — Gabriel deve entregar o PR da Sprint 0 para `dev` antes de Sabrina iniciar.
+
+---
+
+### Sabrina — Branch: `feat/sabrina/laudos`
+
+**Domínio:** Features de negócio (laudos, dashboard, visualização)
+
+> **Pré-requisito:** PR da Sprint 0 do Gabriel mergeado em `dev` e Sabrina deve fazer `git merge dev` em sua branch antes de começar.
+
+| Sprint | Entrega                                                    | Arquivos                                          |
+| ------ | ---------------------------------------------------------- | ------------------------------------------------- |
+| 1      | `laudoService.ts` (listar, buscar, criar, editar, deletar) | `src/services/laudoService.ts`                    |
+| 1      | `useLaudos.ts` e `useLaudo.ts` hooks                       | `src/hooks/useLaudos.ts`, `src/hooks/useLaudo.ts` |
+| 1      | Dashboard (cards de resumo + últimos laudos)               | `src/pages/dashboard/DashboardPage.tsx`           |
+| 1      | Lista de Laudos com paginação e filtro por N Lab           | `src/pages/laudos/LaudosListPage.tsx`             |
+| 2      | Detalhe do Laudo (Accordions por equipamento + PDF)        | `src/pages/laudos/LaudoDetailPage.tsx`            |
+| 2      | Formulário de Laudo com Stepper 6 etapas (staff)           | `src/pages/laudos/LaudoFormPage.tsx`              |
+
+---
+
+### Zonas de trabalho — sem conflito de arquivos
+
+```
+Gabriel trabalha em:              Sabrina trabalha em:
+├── src/theme/                    ├── src/services/laudoService.ts
+├── src/types/                    ├── src/hooks/useLaudos.ts
+├── src/services/api.ts           ├── src/hooks/useLaudo.ts
+├── src/services/authService.ts   ├── src/pages/dashboard/
+├── src/contexts/                 ├── src/pages/laudos/
+├── src/hooks/useAuth.ts          └── (usa os types e services do Gabriel)
+├── src/pages/auth/
+├── src/components/layout/
+├── src/components/shared/
+├── src/App.tsx
+└── src/pages/calibracao/
+```
+
+**Arquivos compartilhados (apenas leitura para Sabrina):**
+
+- `src/types/*.ts` — Sabrina importa, Gabriel mantém
+- `src/services/api.ts` — Sabrina importa, Gabriel mantém
+- `src/contexts/AuthContext.tsx` — Sabrina consume via hook `useAuth()`
+
+---
+
+## 16. Estratégia de Integração com a API
+
+### Resposta direta: integração incremental, não no final
+
+**Não faça todas as telas primeiro para integrar só no fim.** Isso cria uma dívida técnica enorme e torna os bugs muito mais difíceis de rastrear. A abordagem correta é:
+
+```
+Tela nova → conecta na API real → valida → PR → próxima tela
+```
+
+### Fluxo recomendado por feature
+
+```
+1. Gabriel entrega api.ts (Axios + JWT) → dev
+2. Sabrina puxa dev na sua branch
+3. Sabrina implementa laudoService.ts com as chamadas reais
+4. Sabrina implementa useLaudos.ts consumindo o service
+5. Sabrina implementa LaudosListPage.tsx consumindo o hook
+6. Testa com o backend rodando localmente
+7. PR para dev
+```
+
+### Quando o backend não estiver disponível
+
+Use um **mock local** no próprio service para não travar o desenvolvimento:
+
+```ts
+// src/services/laudoService.ts — modo mock (temporário)
+const USE_MOCK = false; // mude para true se o backend não estiver rodando
+
+export const laudoService = {
+  listar: async (page = 1) => {
+    if (USE_MOCK) {
+      return { data: { results: MOCK_LAUDOS, count: 2 } };
+    }
+    return api.get(`meus-laudos/?page=${page}`);
+  },
+  // ...
+};
+
+// Mock data local — usar apenas para desenvolvimento
+const MOCK_LAUDOS: AnaliseSolo[] = [
+  {
+    n_lab: "2026/001",
+    cliente: {
+      codigo: "CLI001",
+      nome: "João da Silva",
+      municipio: "Uberlândia",
+      area: "Fazenda Boa Vista",
+    },
+    data_entrada: "2026-04-01",
+    data_saida: null,
+    ph_agua: 6.2,
+    ph_cacl2: 5.8,
+    ph_kcl: 5.5,
+    // ... restante dos campos como null
+  },
+];
+```
+
+### Ordem de integração recomendada
+
+| #   | Quem    | Feature                                   | Depende de |
+| --- | ------- | ----------------------------------------- | ---------- |
+| 1   | Gabriel | `POST /token/` (login)                    | —          |
+| 2   | Gabriel | `POST /register/` (cadastro)              | —          |
+| 3   | Gabriel | Rotas protegidas com token                | Item 1     |
+| 4   | Sabrina | `GET /meus-laudos/` (listar)              | Item 3     |
+| 5   | Sabrina | `GET /meus-laudos/:nLab/` (detalhe)       | Item 4     |
+| 6   | Gabriel | `POST/PATCH/DELETE /meus-laudos/` (staff) | Item 3     |
+| 7   | Sabrina | `GET /meus-laudos/:nLab/pdf/` (PDF)       | Item 5     |
+| 8   | Gabriel | Baterias de calibração                    | Item 3     |
+
+---
+
+## 17. Tratamento de Erros
+
+### Categorias de erro
+
+| Categoria                             | Origem                         | Como tratar                                                   |
+| ------------------------------------- | ------------------------------ | ------------------------------------------------------------- |
+| **Validação de formulário**           | Frontend (zod)                 | Mensagem em vermelho embaixo do campo (`helperText` no MUI)   |
+| **Erro de API (4xx)**                 | Backend retorna JSON com erros | `Alert` vermelho com a mensagem do DRF                        |
+| **Erro de rede (500 / sem internet)** | Axios não consegue conectar    | `Alert` genérico "Erro de conexão. Tente novamente."          |
+| **Token expirado (401)**              | Axios interceptor              | Renova automaticamente; se falhar → logout + redirect         |
+| **Acesso negado (403)**               | Backend                        | Redireciona para `/dashboard` com `Alert` de permissão negada |
+| **Não encontrado (404)**              | Backend                        | Exibe página `NotFound` ou mensagem inline                    |
+
+---
+
+### Padrão de tratamento em hooks
+
+```ts
+// src/hooks/useLaudos.ts — padrão de estado de erro
+
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { laudoService } from "../services/laudoService";
+import type { AnaliseSolo } from "../types/analise";
+
+interface UseLaudosState {
+  laudos: AnaliseSolo[];
+  loading: boolean;
+  error: string | null;
+  total: number;
+}
+
+export const useLaudos = (page = 1) => {
+  const [state, setState] = useState<UseLaudosState>({
+    laudos: [],
+    loading: true,
+    error: null,
+    total: 0,
+  });
+
+  useEffect(() => {
+    setState((prev) => ({ ...prev, loading: true, error: null }));
+
+    laudoService
+      .listar(page)
+      .then(({ data }) => {
+        setState({
+          laudos: data.results,
+          loading: false,
+          error: null,
+          total: data.count,
+        });
+      })
+      .catch((err) => {
+        const msg = axios.isAxiosError(err)
+          ? (err.response?.data?.detail ?? "Erro ao carregar laudos.")
+          : "Erro de conexão.";
+        setState((prev) => ({ ...prev, loading: false, error: msg }));
+      });
+  }, [page]);
+
+  return state;
+};
+```
+
+---
+
+### Padrão de exibição de erro em páginas
+
+```tsx
+// Exibição padronizada — use sempre este padrão
+import { Alert, CircularProgress, Box } from "@mui/material";
+
+const LaudosListPage = () => {
+  const { laudos, loading, error } = useLaudos();
+
+  if (loading) return <LoadingOverlay />;
+
+  if (error)
+    return (
+      <Alert severity="error" sx={{ m: 2 }}>
+        {error}
+      </Alert>
+    );
+
+  // ... render normal
+};
+```
+
+---
+
+### Erros de formulário — formato DRF
+
+O Django REST Framework retorna erros neste formato:
+
+```json
+{
+  "n_lab": ["O padrão do N Lab deve ser ANO/NUMERO ex 2026/001"],
+  "ph_agua": ["O pH deve estar entre 0 e 14."],
+  "non_field_errors": ["Erro geral não associado a campo."]
+}
+```
+
+Para exibir os erros por campo no formulário:
+
+```ts
+// Utilitário para converter erros do DRF para react-hook-form
+export function applyDrfErrors<T extends Record<string, unknown>>(
+  errors: Record<string, string[]>,
+  setError: (field: keyof T, error: { message: string }) => void,
+) {
+  Object.entries(errors).forEach(([field, messages]) => {
+    if (field !== "non_field_errors") {
+      setError(field as keyof T, { message: messages[0] });
+    }
+  });
+}
+
+// Uso em LaudoFormPage.tsx:
+try {
+  await laudoService.criar(payload);
+} catch (err) {
+  if (axios.isAxiosError(err) && err.response?.status === 400) {
+    applyDrfErrors(err.response.data, setError);
+  }
+}
+```
+
+---
+
+### Feedback visual obrigatório
+
+Todo fluxo assíncrono deve ter **3 estados visuais**:
+
+```
+estado: loading  → <CircularProgress /> ou <Skeleton />
+estado: success  → conteúdo normal ou <Alert severity="success">
+estado: error    → <Alert severity="error"> com a mensagem
+```
+
+**Nunca deixe a tela sem resposta** durante uma operação — o usuário precisa saber o que está acontecendo.
+
+---
+
+## 18. Checklist de Entrega por Feature
+
+Antes de dar PR como pronto, verificar:
+
+- [ ] Tipagem completa (sem `any`)
+- [ ] Hook isolado para chamadas de API
+- [ ] Componente sem acesso direto ao `axios`/`fetch`
+- [ ] Formulário validado com `zod` + `react-hook-form`
+- [ ] Erros da API exibidos via `Alert` (erro 4xx, erro de rede, 403, 404)
+- [ ] Erros de campo mapeados do DRF para `react-hook-form`
+- [ ] Loading state durante operações assíncronas
+- [ ] Rotas protegidas corretamente (`PrivateRoute` ou `StaffRoute`)
+- [ ] Responsividade com `Grid` e breakpoints do MUI
+- [ ] Props tipadas (sem props desnecessárias — respeitar ISP)
+- [ ] Tema MUI aplicado (sem cores hardcoded fora do theme)
+- [ ] Branch atualizada com `dev` antes de abrir PR (`git merge dev`)
+- [ ] Sem conflito com os arquivos da outra dev
 
 ---
 
