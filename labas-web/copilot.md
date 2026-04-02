@@ -942,6 +942,7 @@ Antes de dar PR como pronto, verificar:
 - [ ] Responsividade com `Grid` e breakpoints do MUI
 - [ ] Props tipadas (sem props desnecessárias — respeitar ISP)
 - [ ] Tema MUI aplicado (sem cores hardcoded fora do theme)
+- [ ] Testes automatizados para a feature (unitários e/ou de integração)
 
 ---
 
