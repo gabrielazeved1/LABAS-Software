@@ -1,7 +1,7 @@
 from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
 from decimal import Decimal
-from .models import AnaliseSolo, LeituraEquipamento, PontoCalibracao
+from .models import AnaliseSolo, BateriaCalibracao, LeituraEquipamento, PontoCalibracao
 
 from src.application.equipamentos.absorcao_atomica import CalculadoraAbsorcaoAtomica
 from src.application.equipamentos.fotometro_chama import CalculadoraFotometroChama
@@ -13,7 +13,26 @@ from src.application.use_cases import CalculadoraAnaliseSolo
 
 
 # =============================================================================
-# 1. CALCULO DA CURVA DE CALIBRACAO
+# 1. GERENCIAMENTO DA BATERIA ATIVA
+# =============================================================================
+
+
+@receiver(pre_save, sender=BateriaCalibracao)
+def garantir_bateria_unica_ativa(sender, instance, **kwargs):
+    """
+    Ao marcar uma bateria como ativa, desativa automaticamente todas as outras
+    do mesmo equipamento/elemento para garantir unicidade da curva do dia.
+    """
+    if instance.ativo:
+        BateriaCalibracao.objects.filter(
+            equipamento=instance.equipamento,
+            elemento=instance.elemento,
+            ativo=True,
+        ).exclude(pk=instance.pk).update(ativo=False)
+
+
+# =============================================================================
+# 2. CALCULO DA CURVA DE CALIBRACAO
 # =============================================================================
 
 

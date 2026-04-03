@@ -14,8 +14,18 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from weasyprint import HTML
 
-from src.infrastructure.database.models import AnaliseSolo
-from .serializers import AnaliseSoloSerializer, UserRegistrationSerializer
+from src.infrastructure.database.models import (
+    AnaliseSolo,
+    BateriaCalibracao,
+    PontoCalibracao,
+)
+from .serializers import (
+    AnaliseSoloSerializer,
+    UserRegistrationSerializer,
+    BateriaCalibracaoSerializer,
+    BateriaCalibracaoAtivoSerializer,
+    PontoCalibracaoSerializer,
+)
 from .permissions import IsOwnerOrTechnician
 
 # =============================================================================
@@ -163,3 +173,94 @@ def gerar_laudo_pdf(request, n_lab):
     response["Content-Disposition"] = f'inline; filename="{nome_arquivo}"'
 
     return response
+
+
+# =============================================================================
+# 4 CALIBRACAO DE EQUIPAMENTOS (staff only)
+# =============================================================================
+
+
+class BateriaCalibracaoListCreateView(generics.ListCreateAPIView):
+    """
+    GET  /api/baterias/            -> Lista baterias (filtravel por ?equipamento=AA)
+    POST /api/baterias/            -> Cria nova bateria
+    Somente tecnicos (is_staff) tem acesso.
+    """
+
+    serializer_class = BateriaCalibracaoSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        from rest_framework.permissions import IsAdminUser
+
+        return [IsAuthenticated(), IsAdminUser()]
+
+    def get_queryset(self):
+        qs = BateriaCalibracao.objects.prefetch_related("pontos").order_by(
+            "-data_criacao"
+        )
+        equipamento = self.request.query_params.get("equipamento")
+        if equipamento:
+            qs = qs.filter(equipamento=equipamento)
+        return qs
+
+
+class BateriaCalibracaoDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET    /api/baterias/{id}/   -> Detalhe com pontos aninhados
+    PATCH  /api/baterias/{id}/   -> Toggle ativo
+    DELETE /api/baterias/{id}/   -> Remove bateria
+    """
+
+    queryset = BateriaCalibracao.objects.prefetch_related("pontos").all()
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        from rest_framework.permissions import IsAdminUser
+
+        return [IsAuthenticated(), IsAdminUser()]
+
+    def get_serializer_class(self):
+        # PATCH exclusivo para o campo ativo — evita sobrescrita dos coeficientes
+        if self.request.method == "PATCH":
+            return BateriaCalibracaoAtivoSerializer
+        return BateriaCalibracaoSerializer
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs["partial"] = True
+        return self.update(request, *args, **kwargs)
+
+
+class PontoCalibracaoCreateView(generics.CreateAPIView):
+    """
+    POST /api/baterias/{bateria_id}/pontos/
+    Adiciona um ponto de calibracao a uma bateria existente.
+    O signal atualiza a equacao da reta automaticamente apos o save.
+    """
+
+    serializer_class = PontoCalibracaoSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        from rest_framework.permissions import IsAdminUser
+
+        return [IsAuthenticated(), IsAdminUser()]
+
+    def perform_create(self, serializer):
+        bateria = get_object_or_404(BateriaCalibracao, pk=self.kwargs["bateria_id"])
+        serializer.save(bateria=bateria)
+
+
+class PontoCalibracaoDestroyView(generics.DestroyAPIView):
+    """
+    DELETE /api/pontos/{id}/
+    Remove um ponto especifico. O signal recalcula a equacao apos a exclusao.
+    """
+
+    queryset = PontoCalibracao.objects.all()
+    permission_classes = [IsAuthenticated]
+
+    def get_permissions(self):
+        from rest_framework.permissions import IsAdminUser
+
+        return [IsAuthenticated(), IsAdminUser()]

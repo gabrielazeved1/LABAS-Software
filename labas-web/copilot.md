@@ -37,7 +37,7 @@
 
 ## Status das Sprints
 
-> Última atualização: 02/04/2026
+> Última atualização: 03/04/2026
 
 ---
 
@@ -91,20 +91,42 @@
 
 > **Nota — Snackbar:** O `SnackbarContext` deve capturar erros 400 (validação do Django — formato `{ campo: ["msg"] }`) e 403 (acesso negado) e exibir via `MUI Snackbar + Alert`. Componentes nunca devem exibir alertas diretamente.
 
-#### Sprint 2 — Calibração de Equipamentos ⬜ Pendente
+#### Sprint 2 — Calibração de Equipamentos ✅ Concluída
 
-| Tarefa                                                         | Arquivo                                       | Status     |
-| -------------------------------------------------------------- | --------------------------------------------- | ---------- |
-| calibracaoService (baterias, leituras, pontos)                 | `src/services/calibracaoService.ts`           | ⬜ A fazer |
-| useCalibracao hook                                             | `src/hooks/useCalibracao.ts`                  | ⬜ A fazer |
-| CalibracaoListPage (Tabs por equipamento)                      | `src/pages/calibracao/CalibracaoListPage.tsx` | ⬜ A fazer |
-| CalibracaoFormPage (pontos + equação R² em tempo real)         | `src/pages/calibracao/CalibracaoFormPage.tsx` | ⬜ A fazer |
-| Toggle ativo/inativo da bateria (`BateriaCalibracao.ativo`)    | `CalibracaoListPage` ou `CalibracaoFormPage`  | ⬜ A fazer |
-| Exibir `equacao_formada` (ex: `y = 0.123x + 0.05`) nos painéis | `CalibracaoListPage` + `LaudoFormPage`        | ⬜ A fazer |
+| Tarefa                                                                  | Arquivo                                            | Status   |
+| ----------------------------------------------------------------------- | -------------------------------------------------- | -------- |
+| Signal: auto-desativar baterias ao ativar outra (mesmo elem/equip)      | `backend/.../signals.py`                           | ✅ Feito |
+| Serializers: `BateriaCalibracaoSerializer`, `PontoCalibracaoSerializer` | `backend/.../serializers.py`                       | ✅ Feito |
+| Views REST: CRUD baterias + pontos (staff only)                         | `backend/.../views.py`                             | ✅ Feito |
+| URLs: `/api/baterias/`, `/api/baterias/{id}/`, `/api/pontos/{id}/`      | `backend/.../urls.py`                              | ✅ Feito |
+| `calibracaoService` (listar, criar, toggleAtivo, pontos, remover)       | `src/services/calibracaoService.ts`                | ✅ Feito |
+| Testes do `calibracaoService` (6 testes)                                | `src/__tests__/services/calibracaoService.test.ts` | ✅ Feito |
+| `useCalibracao` hook (listagem + filtro + toggleAtivo + refetch)        | `src/hooks/useCalibracao.ts`                       | ✅ Feito |
+| `useBateriaDetalhe` hook (pontos + adicionarPonto + removerPonto)       | `src/hooks/useBateriaDetalhe.ts`                   | ✅ Feito |
+| Testes dos hooks (8 testes)                                             | `src/__tests__/hooks/useCalibracao.test.tsx`       | ✅ Feito |
+| `CalibracaoListPage` (Tabs por equipamento + Switch ativo + remove)     | `src/pages/calibracao/CalibracaoListPage.tsx`      | ✅ Feito |
+| `CalibracaoFormPage` (Stepper 2 etapas + equação ao vivo)               | `src/pages/calibracao/CalibracaoFormPage.tsx`      | ✅ Feito |
+| Testes da `CalibracaoListPage` (5 testes)                               | `src/__tests__/pages/CalibracaoListPage.test.tsx`  | ✅ Feito |
+| Rotas `/calibracao`, `/calibracao/nova`, `/calibracao/:id`              | `src/App.tsx`                                      | ✅ Feito |
 
-> **Nota — `ativo`:** Apenas uma bateria por equipamento/elemento deve estar ativa por vez. O Switch do MUI deve fazer `PATCH { ativo: true }` na bateria selecionada. O back-end pode ou não desativar as demais automaticamente — verificar comportamento da API.
+#### Sprint 2 — UX de Calibração (Refinamentos) ✅ Concluída — 03/04/2026
 
-> **Nota — `equacao_formada`:** Esta string é uma `property` read-only do model Django. Deve ser exibida sempre que o técnico estiver inserindo leituras brutas, garantindo rastreabilidade da curva de regressão aplicada.
+| Tarefa                                                                                          | Arquivo                                       | Status   |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------- | -------- |
+| `LEITURA_LABEL` por equipamento (FC → Emissão, ES → Transmitância)                              | `src/config/calibracaoConstants.ts`           | ✅ Feito |
+| `SEM_CURVA_CALIBRACAO` — TI e PH pulam step 2, exibem mensagem informativa                      | `src/config/calibracaoConstants.ts`           | ✅ Feito |
+| `CalibracaoListPage` — "Não utiliza equação" e "—" para R² de TI/PH                             | `src/pages/calibracao/CalibracaoListPage.tsx` | ✅ Feito |
+| `useCalibracaoForm` — reescrito com `LinhaRascunho[]` (grid multi-linha, validação de parciais) | `src/hooks/useCalibracaoForm.ts`              | ✅ Feito |
+| `CalibracaoFormPage` — tabela pontos existentes com botão remover (modo edição)                 | `src/pages/calibracao/CalibracaoFormPage.tsx` | ✅ Feito |
+| `CalibracaoFormPage` — grid de novas linhas (múltiplas de uma vez, erro inline por linha)       | `src/pages/calibracao/CalibracaoFormPage.tsx` | ✅ Feito |
+| `CalibracaoListPage` → `CalibracaoFormPage` — pré-seleciona equipamento via `navigate state`    | `src/pages/calibracao/CalibracaoListPage.tsx` | ✅ Feito |
+| `ELEMENTOS_POR_EQUIPAMENTO` — filtra dropdown de elemento por equipamento selecionado           | `src/config/calibracaoConstants.ts`           | ✅ Feito |
+| `ELEMENTO_LABEL` — labels legíveis para todos os elementos ("P Mehlich", "pH CaCl₂", etc.)      | `src/config/calibracaoConstants.ts`           | ✅ Feito |
+| Reset automático do campo `elemento` ao trocar equipamento no formulário                        | `src/pages/calibracao/CalibracaoFormPage.tsx` | ✅ Feito |
+
+> **Regra — `ativo`:** Confirmado: o backend desativa automaticamente todas as outras baterias do mesmo `elemento + equipamento` via `pre_save` signal ao setar `ativo=True`. O frontend sempre faz refetch completo após o toggle para refletir o estado real.
+
+> **Nota — `equacao_formada`:** Campo `read_only` calculado pelo backend via `@property`. Exibido ao vivo no `CalibracaoFormPage` Step 2 após cada ponto adicionado/removido (o signal recalcula e o hook faz refetch).
 
 ---
 
