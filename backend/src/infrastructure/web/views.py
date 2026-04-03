@@ -4,6 +4,7 @@ from django.http import HttpResponse
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.decorators import (
     api_view,
     authentication_classes,
@@ -40,6 +41,27 @@ class RegisterUserView(generics.CreateAPIView):
         return Response(
             {"message": "Usuario e perfil de Cliente criados com sucesso"},
             status=status.HTTP_201_CREATED,
+        )
+
+
+# Retorna os dados do usuario autenticado atualmente
+class MeView(APIView):
+    """
+    Endpoint protegido para o frontend restaurar a sessao ao recarregar a pagina.
+    Retorna os campos essenciais do usuario logado via JWT.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response(
+            {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "is_staff": user.is_staff,
+            }
         )
 
 

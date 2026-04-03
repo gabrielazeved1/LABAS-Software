@@ -128,6 +128,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   // -------------------------------------------------------------------------
+  // Listener para logout forçado pelo interceptor (refresh token expirado)
+  // -------------------------------------------------------------------------
+
+  useEffect(() => {
+    const handleForceLogout = () => {
+      setUser(null);
+      navigate("/login", { replace: true });
+    };
+
+    window.addEventListener("labas:logout", handleForceLogout);
+    return () => window.removeEventListener("labas:logout", handleForceLogout);
+  }, [navigate]);
+
+  // -------------------------------------------------------------------------
   // Ações expostas
   // -------------------------------------------------------------------------
 

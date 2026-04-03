@@ -21,6 +21,11 @@ export interface RegisterPayload {
   area?: string;
 }
 
+/** Resposta do backend ao criar conta — apenas mensagem de confirmação. */
+export interface RegisterResponse {
+  message: string;
+}
+
 export interface AuthUser {
   id: number;
   username: string;

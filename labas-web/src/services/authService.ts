@@ -15,6 +15,7 @@ import type {
   LoginPayload,
   TokenPair,
   RegisterPayload,
+  RegisterResponse,
   AuthUser,
 } from "../types/auth";
 
@@ -49,7 +50,7 @@ const refresh = (refreshToken: string) =>
  * @returns AuthUser — dados do usuário recém-criado
  */
 const register = (data: RegisterPayload) =>
-  api.post<AuthUser>("register/", data);
+  api.post<RegisterResponse>("register/", data);
 
 /**
  * Busca os dados do usuário autenticado no momento.
