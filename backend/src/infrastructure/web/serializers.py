@@ -2,7 +2,12 @@ from rest_framework import serializers
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
 from django.db import transaction, IntegrityError
-from src.infrastructure.database.models import Cliente, AnaliseSolo
+from src.infrastructure.database.models import (
+    Cliente,
+    AnaliseSolo,
+    BateriaCalibracao,
+    PontoCalibracao,
+)
 
 
 # Serializer para o processo de cadastro inicial no sistema
@@ -134,3 +139,62 @@ class AnaliseSoloSerializer(serializers.ModelSerializer):
             "mg_k",
             "c_org",
         ]
+
+
+# =============================================================================
+# CALIBRACAO DE EQUIPAMENTOS
+# =============================================================================
+
+
+class PontoCalibracaoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PontoCalibracao
+        fields = ["id", "bateria", "concentracao", "absorvancia"]
+        read_only_fields = ["id"]
+
+
+class BateriaCalibracaoSerializer(serializers.ModelSerializer):
+    """Serializer de leitura — inclui pontos e equacao calculada."""
+
+    pontos = PontoCalibracaoSerializer(many=True, read_only=True)
+    equacao_formada = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = BateriaCalibracao
+        fields = [
+            "id",
+            "equipamento",
+            "elemento",
+            "volume_solo",
+            "volume_extrator",
+            "data_criacao",
+            "coeficiente_angular_a",
+            "coeficiente_linear_b",
+            "r_quadrado",
+            "leitura_branco",
+            "ativo",
+            "equacao_formada",
+            "pontos",
+        ]
+        read_only_fields = [
+            "id",
+            "data_criacao",
+            "coeficiente_angular_a",
+            "coeficiente_linear_b",
+            "r_quadrado",
+            "equacao_formada",
+        ]
+
+    def validate(self, attrs):
+        """Delega validacao estequiometrica ao metodo clean() do model."""
+        instance = BateriaCalibracao(**attrs)
+        instance.clean()
+        return attrs
+
+
+class BateriaCalibracaoAtivoSerializer(serializers.ModelSerializer):
+    """Serializer exclusivo para o PATCH de toggle ativo — aceita apenas o campo ativo."""
+
+    class Meta:
+        model = BateriaCalibracao
+        fields = ["ativo"]
