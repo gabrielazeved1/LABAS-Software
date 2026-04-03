@@ -7,13 +7,12 @@
  * - Validação e lógica de submit extraídas para arquivos próprios.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link as RouterLink, Navigate } from "react-router-dom";
 import {
   Box,
   Button,
   CircularProgress,
-  Alert,
   TextField,
   Typography,
   Link,
@@ -21,6 +20,7 @@ import {
   IconButton,
   Divider,
 } from "@mui/material";
+import { useSnackbar } from "../../hooks/useSnackbar";
 import {
   Visibility,
   VisibilityOff,
@@ -38,6 +38,7 @@ import { useLoginForm } from "../../hooks/useLoginForm";
  */
 export default function LoginPage() {
   const { login, isAuthenticated, loading: authLoading } = useAuth();
+  const { showError } = useSnackbar();
   const {
     register,
     handleSubmit,
@@ -46,6 +47,10 @@ export default function LoginPage() {
     onSubmit,
   } = useLoginForm(login);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (apiError) showError(apiError);
+  }, [apiError, showError]);
 
   if (!authLoading && isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -131,12 +136,6 @@ export default function LoginPage() {
         <Typography variant="body2" color="text.secondary" mb={4}>
           Entre com suas credenciais para acessar o sistema.
         </Typography>
-
-        {apiError && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {apiError}
-          </Alert>
-        )}
 
         <Box
           component="form"

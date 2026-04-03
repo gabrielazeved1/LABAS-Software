@@ -7,9 +7,9 @@
  * - Validação e lógica de submit extraídas para arquivos próprios.
  */
 
+import { useEffect } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import {
-  Alert,
   Box,
   Button,
   CircularProgress,
@@ -21,6 +21,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { useSnackbar } from "../../hooks/useSnackbar";
 import { authService } from "../../services/authService";
 import { useAuth } from "../../hooks/useAuth";
 import { useRegisterForm } from "../../hooks/useRegisterForm";
@@ -51,6 +52,7 @@ export default function RegisterPage() {
   const registerFn = async (payload: any) => {
     await registerApi(payload);
   };
+  const { showError } = useSnackbar();
   const {
     activeStep,
     setActiveStep,
@@ -60,6 +62,10 @@ export default function RegisterPage() {
     handleStep1Submit,
     handleStep2Submit,
   } = useRegisterForm(registerFn, login, navigate);
+
+  useEffect(() => {
+    if (apiError) showError(apiError);
+  }, [apiError, showError]);
 
   return (
     <Box
@@ -103,13 +109,6 @@ export default function RegisterPage() {
             </Step>
           ))}
         </Stepper>
-
-        {/* Erro da API */}
-        {apiError && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {apiError}
-          </Alert>
-        )}
 
         {/* ---- Step 1: Credenciais ---- */}
         {activeStep === 0 && (

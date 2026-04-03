@@ -62,28 +62,30 @@
 | AuthContext                      | `src/contexts/AuthContext.tsx` | ✅ Feito |
 | useAuth hook                     | `src/hooks/useAuth.ts`         | ✅ Feito |
 
-#### Sprint 1 — Autenticação, Layout e Infraestrutura 🚧 Em andamento
+#### Sprint 1 — Autenticação, Layout e Infraestrutura ✅ Concluída
 
-| Tarefa                                                               | Arquivo                                                     | Status     |
-| -------------------------------------------------------------------- | ----------------------------------------------------------- | ---------- |
-| Instalar `react-hook-form` + `zod` + `@hookform/resolvers`           | `package.json`                                              | ⬜ A fazer |
-| LoginPage (validação com zod)                                        | `src/pages/auth/LoginPage.tsx`                              | ⬜ A fazer |
-| RegisterPage (Stepper 2 etapas)                                      | `src/pages/auth/RegisterPage.tsx`                           | ⬜ A fazer |
-| PrivateRoute + StaffRoute                                            | `src/components/shared/PrivateRoute.tsx` + `StaffRoute.tsx` | ⬜ A fazer |
-| Roteamento completo                                                  | `src/App.tsx`                                               | ⬜ A fazer |
-| ThemeProvider + AuthProvider + Router no main.tsx                    | `src/main.tsx`                                              | ⬜ A fazer |
-| AppShell                                                             | `src/components/layout/AppShell.tsx`                        | ⬜ A fazer |
-| AppSidebar (navegação por role)                                      | `src/components/layout/AppSidebar.tsx`                      | ⬜ A fazer |
-| AppHeader (usuário + logout)                                         | `src/components/layout/AppHeader.tsx`                       | ⬜ A fazer |
-| StatusChip                                                           | `src/components/shared/StatusChip.tsx`                      | ⬜ A fazer |
-| ConfirmDialog                                                        | `src/components/shared/ConfirmDialog.tsx`                   | ⬜ A fazer |
-| LoadingOverlay                                                       | `src/components/shared/LoadingOverlay.tsx`                  | ⬜ A fazer |
-| EmptyState                                                           | `src/components/shared/EmptyState.tsx`                      | ⬜ A fazer |
-| PageHeader                                                           | `src/components/shared/PageHeader.tsx`                      | ⬜ A fazer |
-| Refresh Token silencioso no interceptor 401 (access expira em 60min) | `src/services/api.ts`                                       | ⬜ A fazer |
-| Sistema global de Snackbar (sucesso/erro/403 da API)                 | `src/contexts/SnackbarContext.tsx` + hook                   | ⬜ A fazer |
-| clienteService (buscar clientes para Autocomplete do formulário)     | `src/services/clienteService.ts`                            | ⬜ A fazer |
-| useClientes hook                                                     | `src/hooks/useClientes.ts`                                  | ⬜ A fazer |
+| Tarefa                                                               | Arquivo                                                     | Status   |
+| -------------------------------------------------------------------- | ----------------------------------------------------------- | -------- |
+| Instalar `react-hook-form` + `zod` + `@hookform/resolvers`           | `package.json`                                              | ✅ Feito |
+| LoginPage (validação com zod)                                        | `src/pages/auth/LoginPage.tsx`                              | ✅ Feito |
+| RegisterPage (Stepper 2 etapas)                                      | `src/pages/auth/RegisterPage.tsx`                           | ✅ Feito |
+| ThemeProvider + AuthProvider + Router no main.tsx                    | `src/main.tsx`                                              | ✅ Feito |
+| Testes automatizados (schemas, hooks, páginas — 41 testes)           | `src/__tests__/`                                            | ✅ Feito |
+| Endpoint `/api/me/` + validação de unicidade no backend              | `src/infrastructure/web/views.py`                           | ✅ Feito |
+| PrivateRoute + StaffRoute                                            | `src/components/shared/PrivateRoute.tsx` + `StaffRoute.tsx` | ✅ Feito |
+| Roteamento completo                                                  | `src/App.tsx`                                               | ✅ Feito |
+| AppShell                                                             | `src/components/layout/AppShell.tsx`                        | ✅ Feito |
+| AppSidebar (navegação por role)                                      | `src/components/layout/AppSidebar.tsx`                      | ✅ Feito |
+| AppHeader (usuário + logout)                                         | `src/components/layout/AppHeader.tsx`                       | ✅ Feito |
+| StatusChip                                                           | `src/components/shared/StatusChip.tsx`                      | ✅ Feito |
+| ConfirmDialog                                                        | `src/components/shared/ConfirmDialog.tsx`                   | ✅ Feito |
+| LoadingOverlay                                                       | `src/components/shared/LoadingOverlay.tsx`                  | ✅ Feito |
+| EmptyState                                                           | `src/components/shared/EmptyState.tsx`                      | ✅ Feito |
+| PageHeader                                                           | `src/components/shared/PageHeader.tsx`                      | ✅ Feito |
+| Refresh Token silencioso no interceptor 401 (access expira em 60min) | `src/services/api.ts`                                       | ✅ Feito |
+| Sistema global de Snackbar (sucesso/erro/403 da API)                 | `src/contexts/SnackbarContext.tsx` + hook                   | ✅ Feito |
+| clienteService (buscar clientes para Autocomplete do formulário)     | `src/services/clienteService.ts`                            | ✅ Feito |
+| useClientes hook                                                     | `src/hooks/useClientes.ts`                                  | ✅ Feito |
 
 > **Nota — Refresh Token:** O interceptor do `api.ts` já tenta o refresh no 401, mas precisa ser validado contra o token de 60min de acesso e 1 dia de refresh do SimpleJWT. Verificar se a lógica cobre corretamente o retry da requisição original de forma silenciosa.
 

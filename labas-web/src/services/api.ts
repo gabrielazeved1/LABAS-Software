@@ -81,9 +81,11 @@ api.interceptors.response.use(
           // Re-executa a requisição original com o novo access token
           return api(originalRequest);
         } catch {
-          // Refresh token inválido ou expirado — limpa a sessão
+          // Refresh token inválido ou expirado — limpa a sessão e notifica o AuthContext
           localStorage.removeItem("access_token");
           localStorage.removeItem("refresh_token");
+          // Evento customizado para que o AuthContext reaja sem acoplamento direto
+          window.dispatchEvent(new Event("labas:logout"));
         }
       }
     }

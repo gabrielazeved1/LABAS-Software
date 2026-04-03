@@ -7,6 +7,7 @@ import { MemoryRouter } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import { CssBaseline } from "@mui/material";
 import { AuthContext, type AuthContextValue } from "../contexts/AuthContext";
+import { SnackbarProvider } from "../contexts/SnackbarContext";
 import { theme } from "../theme";
 
 const defaultAuthValue: AuthContextValue = {
@@ -35,7 +36,9 @@ export function TestWrapper({
     <MemoryRouter initialEntries={[initialPath]}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+        <SnackbarProvider>
+          <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+        </SnackbarProvider>
       </ThemeProvider>
     </MemoryRouter>
   );
