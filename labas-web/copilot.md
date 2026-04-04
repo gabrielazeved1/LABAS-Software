@@ -168,6 +168,7 @@ Regras de ouro:
 - [ ] Tema MUI aplicado (sem cores hardcoded)
 - [ ] Testes automatizados para a feature
 - [ ] Branch atualizada com dev antes do PR
+- [ ] Sem arquivos desnecessarios no commit (node_modules, dist, builds locais)
 
 ---
 
@@ -200,6 +201,13 @@ Ao finalizar a feature:
 
 1. Garanta que sua branch esta atualizada com `dev`
 2. Abra PR para `dev` (review obrigatoria)
+
+Regra: nunca subir arquivos desnecessarios para o GitHub (ex: `node_modules/`, `dist/`, builds locais). Se aparecer no `git status`, corrija o `.gitignore` e remova antes do commit.
+
+Comandos rapidos de limpeza:
+
+- `rm -rf node_modules`
+- `git restore labas-web/.gitignore`
 
 ---
 
