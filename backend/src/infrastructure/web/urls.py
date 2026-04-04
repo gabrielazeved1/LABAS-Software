@@ -12,25 +12,41 @@ urlpatterns = [
     # ---------------------------------------------------------
     # 1 AUTENTICACAO E ACESSO PUBLICO
     # ---------------------------------------------------------
-    # Rota para criacao de conta de novos clientes e seus perfis
     path("register/", views.RegisterUserView.as_view(), name="user_register"),
-    # Endpoints do SimpleJWT para geracao e renovacao de tokens de acesso
     path("token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    # Retorna os dados do usuario autenticado (usado pelo frontend para restaurar sessao)
     path("me/", views.MeView.as_view(), name="me"),
     # ---------------------------------------------------------
     # 2 GESTAO DE LAUDOS RECURSOS PROTEGIDOS
     # ---------------------------------------------------------
-    # Rota de geracao de PDF posicionada estrategicamente no topo
-    # Previne que o identificador path capture o sufixo pdf como parte do n_lab
     path("meus-laudos/<path:n_lab>/pdf/", views.gerar_laudo_pdf, name="laudo_pdf"),
-    # Listagem geral e criacao de novos laudos por tecnicos
     path("meus-laudos/", views.MeusLaudosAPIView.as_view(), name="listar_criar_laudos"),
-    # Operacoes detalhadas de busca edicao ou exclusao via identificador unico
     path(
         "meus-laudos/<path:n_lab>/",
         views.LaudoDetailAPIView.as_view(),
         name="laudo_detalhe",
+    ),
+    # ---------------------------------------------------------
+    # 3 CALIBRACAO DE EQUIPAMENTOS (staff only)
+    # ---------------------------------------------------------
+    path(
+        "baterias/",
+        views.BateriaCalibracaoListCreateView.as_view(),
+        name="baterias_list_create",
+    ),
+    path(
+        "baterias/<int:pk>/",
+        views.BateriaCalibracaoDetailView.as_view(),
+        name="bateria_detail",
+    ),
+    path(
+        "baterias/<int:bateria_id>/pontos/",
+        views.PontoCalibracaoCreateView.as_view(),
+        name="ponto_create",
+    ),
+    path(
+        "pontos/<int:pk>/",
+        views.PontoCalibracaoDestroyView.as_view(),
+        name="ponto_destroy",
     ),
 ]
