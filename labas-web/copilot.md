@@ -172,42 +172,67 @@ Regras de ouro:
 
 ---
 
-## 10. Fluxo de branches (inicio do trabalho)
+## 10. Fluxo de branches e Boas Práticas (Git)
 
-Ao iniciar o dia ou retomar uma feature:
+**A Regra de Ouro da Segurança:** NUNCA execute um comando de `merge` sem antes commitar o seu trabalho atual na sua branch. Commitar antes garante que o seu código fique salvo no histórico e não seja perdido caso dê algum conflito.
 
-1. Atualize `dev`:
+### Ao iniciar o dia ou retomar uma feature (Sincronização Diária)
+
+1. **Salve o que você estava fazendo na sua branch atual:**
+
+- `git add .`
+- `git commit -m "chore: salvando progresso antes de sincronizar"`
+
+2. **Atualize a branch base (`dev`):**
 
 - `git checkout dev`
 - `git pull origin dev`
 
-2. Volte para sua branch e traga as atualizacoes:
+3. **Volte para sua branch e traga as atualizações:**
 
 - `git checkout feat/<sua-branch>`
 - `git merge dev`
+  > _Por que fazer isso? Isso garante que o seu código funcione perfeitamente com o que o resto da equipe fez ontem, além de resolver conflitos na sua máquina antes de abrir o PR._
 
-Ao iniciar uma nova feature:
+### Ao iniciar uma nova feature
 
-1. Garanta `dev` atualizado
-2. Crie a branch a partir de `dev`:
+1. **Garanta que o `dev` está atualizado:**
 
 - `git checkout dev`
 - `git pull origin dev`
+
+2. **Crie a sua nova branch a partir do `dev` limpo:**
+
 - `git checkout -b feat/<nome-da-feature>`
 
-3. Durante a feature, sincronize com `dev` diariamente
+3. **Durante o desenvolvimento:** Sincronize com o `dev` diariamente (repetindo os passos de "Ao iniciar o dia").
 
-Ao finalizar a feature:
+### Ao finalizar a feature
 
-1. Garanta que sua branch esta atualizada com `dev`
-2. Abra PR para `dev` (review obrigatoria)
+1. Garanta que sua branch está sincronizada com `dev` e que a aplicação roda sem erros localmente.
+2. Faça o `git push` da sua branch.
+3. Abra um Pull Request (PR) para a branch `dev` no GitHub (Review da equipe é obrigatória).
 
-Regra: nunca subir arquivos desnecessarios para o GitHub (ex: `node_modules/`, `dist/`, builds locais). Se aparecer no `git status`, corrija o `.gitignore` e remova antes do commit.
+---
 
-Comandos rapidos de limpeza:
+### 🚨 Regra Anti-Lixo: Prevenção de Arquivos Desnecessários
 
-- `rm -rf node_modules`
-- `git restore labas-web/.gitignore`
+Sempre rode `git status` antes de fazer um `git add .` e `git commit`.
+
+Se você notar que pastas pesadas ou sensíveis estão aparecendo em verde (prontas para subir), **PARE O QUE ESTÁ FAZENDO**. Nunca suba os seguintes arquivos/pastas para o GitHub:
+
+- `node_modules/` (Bibliotecas do NPM)
+- `dist/` ou `build/` (Código compilado)
+- `.env` (Senhas e chaves secretas)
+- `db.sqlite3` (Banco de dados local)
+
+**Comandos rápidos de resgate (se você adicionou algo errado por engano):**
+
+Se você rodou `git add .` e o `node_modules` entrou no rastreamento, tire-o do Git **sem apagar do seu computador** usando:
+
+- `git rm -r --cached node_modules`
+
+Em seguida, garanta que a palavra `node_modules/` está escrita dentro do seu arquivo `.gitignore`, e só então faça o seu commit final.
 
 ---
 
