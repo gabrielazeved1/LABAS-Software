@@ -3,6 +3,7 @@ import {
   calibracaoService,
   type BateriaCalibracaoComPontos,
   type AdicionarPontoPayload,
+  type AtualizarBateriaPayload,
 } from "../services/calibracaoService";
 import { useSnackbar } from "./useSnackbar";
 
@@ -17,6 +18,7 @@ export function useBateriaDetalhe(id: number | null) {
     null,
   );
   const [loading, setLoading] = useState(false);
+  const [salvandoParametros, setSalvandoParametros] = useState(false);
 
   const carregar = useCallback(async () => {
     if (id === null) return;
@@ -62,11 +64,30 @@ export function useBateriaDetalhe(id: number | null) {
     [carregar, showError, showSuccess],
   );
 
+  const atualizarBateria = useCallback(
+    async (payload: AtualizarBateriaPayload) => {
+      if (!bateria) return;
+      setSalvandoParametros(true);
+      try {
+        await calibracaoService.atualizarBateria(bateria.id, payload);
+        showSuccess("Parametros da bateria atualizados.");
+        await carregar();
+      } catch {
+        showError("Erro ao atualizar parametros da bateria.");
+      } finally {
+        setSalvandoParametros(false);
+      }
+    },
+    [bateria, carregar, showError, showSuccess],
+  );
+
   return {
     bateria,
     loading,
+    salvandoParametros,
     adicionarPonto,
     removerPonto,
+    atualizarBateria,
     recarregar: carregar,
   };
 }

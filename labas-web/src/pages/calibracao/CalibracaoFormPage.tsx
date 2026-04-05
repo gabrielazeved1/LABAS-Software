@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 import {
   Box,
@@ -50,7 +50,13 @@ export default function CalibracaoFormPage() {
     location.state as { equipamento?: Equipamento } | null
   )?.equipamento;
 
-  const { bateria, loading: loadingBateria, removerPonto } = useBateriaDetalhe(bateriaId);
+  const {
+    bateria,
+    loading: loadingBateria,
+    removerPonto,
+    atualizarBateria,
+    salvandoParametros,
+  } = useBateriaDetalhe(bateriaId);
   const {
     bateriaForm,
     linhas,
@@ -69,11 +75,37 @@ export default function CalibracaoFormPage() {
   const leituraLabel = LEITURA_LABEL[equipamento];
   const elementosFiltrados = ELEMENTOS_POR_EQUIPAMENTO[equipamento];
 
+  const [parametros, setParametros] = useState({
+    volume_solo: "",
+    volume_extrator: "",
+    leitura_branco: "",
+  });
+
+  const normalizeDecimalInput = (value: string) =>
+    value.replace(/,/g, ".").trim();
+
+  const normalizeDecimalOptional = (value: string) => {
+    const normalized = normalizeDecimalInput(value);
+    return normalized === "" ? undefined : normalized;
+  };
+
+  useEffect(() => {
+    if (!bateria) return;
+    setParametros({
+      volume_solo:
+        bateria.volume_solo !== null ? String(bateria.volume_solo) : "",
+      volume_extrator:
+        bateria.volume_extrator !== null ? String(bateria.volume_extrator) : "",
+      leitura_branco:
+        bateria.leitura_branco !== null ? String(bateria.leitura_branco) : "",
+    });
+  }, [bateria]);
+
   useEffect(() => {
     if (!isEdicao) {
       bateriaForm.resetField("elemento");
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [equipamento]);
 
   if (isEdicao && loadingBateria) {
@@ -139,17 +171,29 @@ export default function CalibracaoFormPage() {
               <>
                 <TextField
                   label="Volume de Solo (dm³)"
-                  type="number"
-                  inputProps={{ step: "0.001" }}
-                  {...bateriaForm.register("volume_solo")}
+                  type="text"
+                  inputProps={{
+                    inputMode: "decimal",
+                    pattern: "[0-9]*[.,]?[0-9]*",
+                  }}
+                  {...bateriaForm.register("volume_solo", {
+                    setValueAs: (value) =>
+                      normalizeDecimalOptional(String(value)),
+                  })}
                   error={!!bateriaForm.formState.errors.volume_solo}
                   helperText={bateriaForm.formState.errors.volume_solo?.message}
                 />
                 <TextField
                   label="Volume de Extrator (mL)"
-                  type="number"
-                  inputProps={{ step: "0.01" }}
-                  {...bateriaForm.register("volume_extrator")}
+                  type="text"
+                  inputProps={{
+                    inputMode: "decimal",
+                    pattern: "[0-9]*[.,]?[0-9]*",
+                  }}
+                  {...bateriaForm.register("volume_extrator", {
+                    setValueAs: (value) =>
+                      normalizeDecimalOptional(String(value)),
+                  })}
                   error={!!bateriaForm.formState.errors.volume_extrator}
                   helperText={
                     bateriaForm.formState.errors.volume_extrator?.message
@@ -161,9 +205,15 @@ export default function CalibracaoFormPage() {
             {REQUER_BRANCO.includes(bateriaForm.watch("equipamento")) && (
               <TextField
                 label="Leitura do Branco"
-                type="number"
-                inputProps={{ step: "0.0001" }}
-                {...bateriaForm.register("leitura_branco")}
+                type="text"
+                inputProps={{
+                  inputMode: "decimal",
+                  pattern: "[0-9]*[.,]?[0-9]*",
+                }}
+                {...bateriaForm.register("leitura_branco", {
+                  setValueAs: (value) =>
+                    normalizeDecimalOptional(String(value)),
+                })}
                 error={!!bateriaForm.formState.errors.leitura_branco}
                 helperText={
                   bateriaForm.formState.errors.leitura_branco?.message
@@ -201,30 +251,147 @@ export default function CalibracaoFormPage() {
               <Typography variant="body1" mb={2}>
                 Este equipamento não utiliza curva de calibração.
               </Typography>
-              <Button variant="contained" onClick={handleFinalizar} disabled={salvandoPontos}>
+              <Button
+                variant="contained"
+                onClick={handleFinalizar}
+                disabled={salvandoPontos}
+              >
                 {salvandoPontos ? "Salvando..." : "Concluir"}
               </Button>
             </Paper>
           ) : (
             <Box>
+              {isEdicao && bateria && (
+                <Paper variant="outlined" sx={{ p: 3, mb: 3, maxWidth: 560 }}>
+                  <Typography variant="subtitle2" mb={2}>
+                    Parametros da bateria
+                  </Typography>
+                  <Stack spacing={2}>
+                    {REQUER_VOLUMES.includes(equipamento) && (
+                      <>
+                        <TextField
+                          label="Volume de Solo (dm³)"
+                          type="text"
+                          inputProps={{
+                            inputMode: "decimal",
+                            pattern: "[0-9]*[.,]?[0-9]*",
+                          }}
+                          value={parametros.volume_solo}
+                          onChange={(e) =>
+                            setParametros((prev) => ({
+                              ...prev,
+                              volume_solo: normalizeDecimalInput(
+                                e.target.value,
+                              ),
+                            }))
+                          }
+                        />
+                        <TextField
+                          label="Volume de Extrator (mL)"
+                          type="text"
+                          inputProps={{
+                            inputMode: "decimal",
+                            pattern: "[0-9]*[.,]?[0-9]*",
+                          }}
+                          value={parametros.volume_extrator}
+                          onChange={(e) =>
+                            setParametros((prev) => ({
+                              ...prev,
+                              volume_extrator: normalizeDecimalInput(
+                                e.target.value,
+                              ),
+                            }))
+                          }
+                        />
+                      </>
+                    )}
+                    {REQUER_BRANCO.includes(equipamento) && (
+                      <TextField
+                        label="Leitura do Branco"
+                        type="text"
+                        inputProps={{
+                          inputMode: "decimal",
+                          pattern: "[0-9]*[.,]?[0-9]*",
+                        }}
+                        value={parametros.leitura_branco}
+                        onChange={(e) =>
+                          setParametros((prev) => ({
+                            ...prev,
+                            leitura_branco: normalizeDecimalInput(
+                              e.target.value,
+                            ),
+                          }))
+                        }
+                      />
+                    )}
+                    <Button
+                      variant="outlined"
+                      onClick={() =>
+                        atualizarBateria({
+                          volume_solo:
+                            parametros.volume_solo.trim() === ""
+                              ? null
+                              : Number(parametros.volume_solo),
+                          volume_extrator:
+                            parametros.volume_extrator.trim() === ""
+                              ? null
+                              : Number(parametros.volume_extrator),
+                          leitura_branco:
+                            parametros.leitura_branco.trim() === ""
+                              ? null
+                              : Number(parametros.leitura_branco),
+                        })
+                      }
+                      disabled={salvandoParametros}
+                      startIcon={
+                        salvandoParametros ? (
+                          <CircularProgress size={16} />
+                        ) : null
+                      }
+                    >
+                      {salvandoParametros ? "Salvando..." : "Salvar parametros"}
+                    </Button>
+                  </Stack>
+                </Paper>
+              )}
               {/* Equação ao vivo (edição) */}
               {bateria && (
-                <Paper variant="outlined" sx={{ p: 2, mb: 3, bgcolor: "background.default" }}>
-                  <Stack direction="row" spacing={3} alignItems="center" flexWrap="wrap">
+                <Paper
+                  variant="outlined"
+                  sx={{ p: 2, mb: 3, bgcolor: "background.default" }}
+                >
+                  <Stack
+                    direction="row"
+                    spacing={3}
+                    alignItems="center"
+                    flexWrap="wrap"
+                  >
                     <Box>
-                      <Typography variant="caption" color="text.secondary">Equação atual</Typography>
-                      <Typography variant="body2" fontFamily="monospace" fontWeight={600}>
+                      <Typography variant="caption" color="text.secondary">
+                        Equação atual
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        fontFamily="monospace"
+                        fontWeight={600}
+                      >
                         {bateria.equacao_formada}
                       </Typography>
                     </Box>
                     {bateria.r_quadrado !== null && (
                       <Box>
-                        <Typography variant="caption" color="text.secondary">R²</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          R²
+                        </Typography>
                         <Box>
                           <Chip
                             size="small"
                             label={Number(bateria.r_quadrado).toFixed(4)}
-                            color={Number(bateria.r_quadrado) >= 0.99 ? "success" : "warning"}
+                            color={
+                              Number(bateria.r_quadrado) >= 0.99
+                                ? "success"
+                                : "warning"
+                            }
                           />
                         </Box>
                       </Box>
@@ -236,8 +403,14 @@ export default function CalibracaoFormPage() {
               {/* Pontos já cadastrados (modo edição) */}
               {isEdicao && bateria && bateria.pontos.length > 0 && (
                 <>
-                  <Typography variant="subtitle2" mb={1}>Pontos cadastrados</Typography>
-                  <Table size="small" sx={{ mb: 2, maxWidth: 560 }} aria-label="Pontos cadastrados">
+                  <Typography variant="subtitle2" mb={1}>
+                    Pontos cadastrados
+                  </Typography>
+                  <Table
+                    size="small"
+                    sx={{ mb: 2, maxWidth: 560 }}
+                    aria-label="Pontos cadastrados"
+                  >
                     <TableHead>
                       <TableRow>
                         <TableCell>#</TableCell>
@@ -273,8 +446,14 @@ export default function CalibracaoFormPage() {
               )}
 
               {/* Grade de novos pontos */}
-              <Typography variant="subtitle2" mb={1}>Adicionar novos pontos</Typography>
-              <Table size="small" sx={{ mb: 1, maxWidth: 560 }} aria-label="Novos pontos">
+              <Typography variant="subtitle2" mb={1}>
+                Adicionar novos pontos
+              </Typography>
+              <Table
+                size="small"
+                sx={{ mb: 1, maxWidth: 560 }}
+                aria-label="Novos pontos"
+              >
                 <TableHead>
                   <TableRow>
                     <TableCell>Concentração (padrão)</TableCell>
@@ -288,9 +467,18 @@ export default function CalibracaoFormPage() {
                       <TableCell sx={{ py: 0.5 }}>
                         <TextField
                           value={linha.concentracao}
-                          onChange={(e) => handleAtualizarLinha(i, "concentracao", e.target.value)}
-                          type="number"
-                          inputProps={{ step: "0.0001" }}
+                          onChange={(e) =>
+                            handleAtualizarLinha(
+                              i,
+                              "concentracao",
+                              normalizeDecimalInput(e.target.value),
+                            )
+                          }
+                          type="text"
+                          inputProps={{
+                            inputMode: "decimal",
+                            pattern: "[0-9]*[.,]?[0-9]*",
+                          }}
                           size="small"
                           error={!!linha.erro}
                           placeholder="0.0000"
@@ -300,9 +488,18 @@ export default function CalibracaoFormPage() {
                       <TableCell sx={{ py: 0.5 }}>
                         <TextField
                           value={linha.absorvancia}
-                          onChange={(e) => handleAtualizarLinha(i, "absorvancia", e.target.value)}
-                          type="number"
-                          inputProps={{ step: "0.0001" }}
+                          onChange={(e) =>
+                            handleAtualizarLinha(
+                              i,
+                              "absorvancia",
+                              normalizeDecimalInput(e.target.value),
+                            )
+                          }
+                          type="text"
+                          inputProps={{
+                            inputMode: "decimal",
+                            pattern: "[0-9]*[.,]?[0-9]*",
+                          }}
                           size="small"
                           error={!!linha.erro}
                           helperText={linha.erro ?? undefined}

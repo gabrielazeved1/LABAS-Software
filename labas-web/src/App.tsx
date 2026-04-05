@@ -16,6 +16,9 @@ const CalibracaoListPage = lazy(
 const CalibracaoFormPage = lazy(
   () => import("./pages/calibracao/CalibracaoFormPage"),
 );
+const EntradaLotePage = lazy(
+  () => import("./pages/operacao-lote/EntradaLotePage"),
+);
 
 const Spinner = () => (
   <Box display="flex" justifyContent="center" py={8}>
@@ -70,6 +73,16 @@ export default function App() {
             <AppShell>
               <Suspense fallback={<Spinner />}>
                 <CalibracaoFormPage />
+              </Suspense>
+            </AppShell>
+          }
+        />
+        <Route
+          path="/entrada-lote"
+          element={
+            <AppShell>
+              <Suspense fallback={<Spinner />}>
+                <EntradaLotePage />
               </Suspense>
             </AppShell>
           }

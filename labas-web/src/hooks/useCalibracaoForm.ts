@@ -112,6 +112,12 @@ export function useCalibracaoForm(
     setLinhas((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  const normalizeDecimalInput = (value: string) =>
+    value.replace(/,/g, ".").trim();
+
+  const parseDecimal = (value: string) =>
+    parseFloat(normalizeDecimalInput(value));
+
   const handleFinalizar = async () => {
     const bateriaId = novaBateriaId ?? initialBateriaId;
     if (!bateriaId) {
@@ -142,8 +148,8 @@ export function useCalibracaoForm(
     const pontosSalvar = linhas
       .filter((l) => !isEmpty(l))
       .map((l) => ({
-        concentracao: parseFloat(l.concentracao),
-        absorvancia: parseFloat(l.absorvancia),
+        concentracao: parseDecimal(l.concentracao),
+        absorvancia: parseDecimal(l.absorvancia),
         bateria: bateriaId,
       }));
 

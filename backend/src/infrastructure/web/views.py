@@ -17,6 +17,7 @@ from weasyprint import HTML
 from src.infrastructure.database.models import (
     AnaliseSolo,
     BateriaCalibracao,
+    LeituraEquipamento,
     PontoCalibracao,
 )
 from .serializers import (
@@ -25,6 +26,8 @@ from .serializers import (
     BateriaCalibracaoSerializer,
     BateriaCalibracaoAtivoSerializer,
     PontoCalibracaoSerializer,
+    AmostraPendenteSerializer,
+    LeituraEquipamentoSerializer,
 )
 from .permissions import IsOwnerOrTechnician
 
@@ -200,8 +203,15 @@ class BateriaCalibracaoListCreateView(generics.ListCreateAPIView):
             "-data_criacao"
         )
         equipamento = self.request.query_params.get("equipamento")
+        elemento = self.request.query_params.get("elemento")
+        ativo = self.request.query_params.get("ativo")
         if equipamento:
             qs = qs.filter(equipamento=equipamento)
+        if elemento:
+            qs = qs.filter(elemento=elemento)
+        if ativo is not None:
+            ativo_bool = ativo.lower() in ["true", "1", "yes"]
+            qs = qs.filter(ativo=ativo_bool)
         return qs
 
 
@@ -223,7 +233,10 @@ class BateriaCalibracaoDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_serializer_class(self):
         # PATCH exclusivo para o campo ativo — evita sobrescrita dos coeficientes
         if self.request.method == "PATCH":
-            return BateriaCalibracaoAtivoSerializer
+            payload_keys = set(getattr(self.request, "data", {}).keys())
+            if payload_keys and payload_keys.issubset({"ativo"}):
+                return BateriaCalibracaoAtivoSerializer
+            return BateriaCalibracaoSerializer
         return BateriaCalibracaoSerializer
 
     def partial_update(self, request, *args, **kwargs):
@@ -264,3 +277,96 @@ class PontoCalibracaoDestroyView(generics.DestroyAPIView):
         from rest_framework.permissions import IsAdminUser
 
         return [IsAuthenticated(), IsAdminUser()]
+
+
+# =============================================================================
+# 5 OPERACAO EM LOTE (Bancada) — staff only
+# =============================================================================
+
+
+class AmostrasPendentesListView(generics.ListAPIView):
+    """
+    GET /api/amostras/?equipamento=AA&elemento=Ca
+    Lista as AnaliseSolo que ainda nao possuem LeituraEquipamento
+    vinculada a bateria ativa do elemento/equipamento solicitado.
+    """
+
+    serializer_class = AmostraPendenteSerializer
+
+    def get_permissions(self):
+        from rest_framework.permissions import IsAdminUser
+
+        return [IsAuthenticated(), IsAdminUser()]
+
+    def get_queryset(self):
+        equipamento = self.request.query_params.get("equipamento")
+        elemento = self.request.query_params.get("elemento")
+
+        if not equipamento or not elemento:
+            return AnaliseSolo.objects.none()
+
+        try:
+            bateria_ativa = BateriaCalibracao.objects.get(
+                equipamento=equipamento,
+                elemento=elemento,
+                ativo=True,
+            )
+        except BateriaCalibracao.DoesNotExist:
+            return AnaliseSolo.objects.none()
+
+        # Exclui amostras que ja possuem leitura registrada para esta bateria ativa
+        ids_com_leitura = LeituraEquipamento.objects.filter(
+            bateria=bateria_ativa
+        ).values_list("analise_id", flat=True)
+
+        return (
+            AnaliseSolo.objects.select_related("cliente")
+            .exclude(id__in=ids_com_leitura)
+            .order_by("n_lab")
+        )
+
+
+class LeituraEquipamentoCreateView(generics.CreateAPIView):
+    """
+    POST /api/leituras/
+    Registra a leitura bruta de uma amostra na bancada.
+    O signal dispara automaticamente o calculo e atualiza o campo
+    correspondente na AnaliseSolo (dupla persistencia).
+    A resposta inclui `resultado_calculado` com o valor oficial ja processado
+    pelo backend, eliminando qualquer necessidade de calculo no frontend.
+    """
+
+    serializer_class = LeituraEquipamentoSerializer
+
+    def get_permissions(self):
+        from rest_framework.permissions import IsAdminUser
+
+        return [IsAuthenticated(), IsAdminUser()]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Persiste a LeituraEquipamento — o signal post_save dispara aqui
+        # e grava o resultado calculado no campo correspondente da AnaliseSolo.
+        leitura = serializer.save()
+
+        # Obrigatorio: o objeto analise em memoria nao reflete o update feito
+        # pelo signal. O refresh garante que lemos o valor recém-persistido.
+        leitura.analise.refresh_from_db()
+
+        # O mapeamento elemento -> campo do modelo e direto via lower():
+        # Ca->ca, Na->na, P_rem->p_rem, H_Al->h_al, MO->mo, etc.
+        campo_elemento = leitura.bateria.elemento.lower()
+        valor_calculado = getattr(leitura.analise, campo_elemento, None)
+
+        # Constrói a resposta como dict novo para evitar mutação do ReturnDict do DRF.
+        data = {
+            **serializer.data,
+            "resultado_calculado": (
+                float(valor_calculado) if valor_calculado is not None else None
+            ),
+        }
+
+        headers = self.get_success_headers(serializer.data)
+        return Response(data, status=status.HTTP_201_CREATED, headers=headers)

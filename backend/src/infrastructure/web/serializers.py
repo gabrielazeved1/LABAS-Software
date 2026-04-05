@@ -6,6 +6,7 @@ from src.infrastructure.database.models import (
     Cliente,
     AnaliseSolo,
     BateriaCalibracao,
+    LeituraEquipamento,
     PontoCalibracao,
 )
 
@@ -198,3 +199,40 @@ class BateriaCalibracaoAtivoSerializer(serializers.ModelSerializer):
     class Meta:
         model = BateriaCalibracao
         fields = ["ativo"]
+
+
+# =============================================================================
+# OPERACAO EM LOTE (Bancada)
+# =============================================================================
+
+
+class AmostraPendenteSerializer(serializers.ModelSerializer):
+    """
+    Representacao minima de uma AnaliseSolo para a tela de Entrada em Lote.
+    Expoe apenas os campos necessarios para identificar a amostra na bancada.
+    """
+
+    cliente_nome = serializers.CharField(source="cliente.nome", read_only=True)
+
+    class Meta:
+        model = AnaliseSolo
+        fields = ["id", "n_lab", "cliente_nome", "data_entrada"]
+
+
+class LeituraEquipamentoSerializer(serializers.ModelSerializer):
+    """
+    Serializer para registro de leituras brutas vindas da bancada.
+    Apos o save, o signal automaticamente calcula e persiste o resultado
+    no campo correspondente da AnaliseSolo.
+    """
+
+    class Meta:
+        model = LeituraEquipamento
+        fields = ["id", "analise", "bateria", "leitura_bruta", "fator_diluicao"]
+        read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        """Delega validacao estequiometrica ao metodo clean() do model."""
+        instance = LeituraEquipamento(**attrs)
+        instance.clean()
+        return attrs
