@@ -49,4 +49,17 @@ urlpatterns = [
         views.PontoCalibracaoDestroyView.as_view(),
         name="ponto_destroy",
     ),
+    # ---------------------------------------------------------
+    # 4 OPERACAO EM LOTE (bancada) — staff only
+    # ---------------------------------------------------------
+    path(
+        "amostras/",
+        views.AmostrasPendentesListView.as_view(),
+        name="amostras_pendentes",
+    ),
+    path(
+        "leituras/",
+        views.LeituraEquipamentoCreateView.as_view(),
+        name="leitura_create",
+    ),
 ]

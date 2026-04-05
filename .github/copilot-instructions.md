@@ -182,6 +182,13 @@ Regras de ouro:
 7. Campos calculados sao somente leitura
 8. `n_lab` segue `AAAA/NNN`
 
+### Regra de Terminal e Comandos (Mãos no Teclado)
+
+- **Sem Execução Autônoma:** Nunca tente executar comandos no terminal de forma autônoma.
+- Sempre que for necessário rodar algo (instalar bibliotecas via `npm`, rodar migrações do Django, etc.), forneça os comandos em um bloco de código `bash` limpo e instrua: _"Rode o comando abaixo no seu terminal"_, para que eu mesmo faça a execução.
+
+* **Backend usa Poetry:** O gerenciador de pacotes do backend (Django) é o **Poetry**. Sempre que fornecer comandos de terminal para o backend (instalação de dependências, migrações, testes), utilize estritamente a sintaxe do Poetry (ex: `poetry add <pacote>`, `poetry run python manage.py migrate`). Não sugira `pip install` ou chamadas de `python` soltas.
+
 ---
 
 ## 8. Testes automatizados

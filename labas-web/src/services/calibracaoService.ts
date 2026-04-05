@@ -3,6 +3,7 @@ import type {
   BateriaCalibracao,
   PontoCalibracao,
   Equipamento,
+  Elemento,
 } from "../types/calibracao";
 
 export interface BateriaCalibracaoComPontos extends BateriaCalibracao {
@@ -12,6 +13,13 @@ export interface BateriaCalibracaoComPontos extends BateriaCalibracao {
 export interface CriarBateriaPayload {
   equipamento: Equipamento;
   elemento: string;
+  volume_solo?: number | null;
+  volume_extrator?: number | null;
+  leitura_branco?: number | null;
+  ativo?: boolean;
+}
+
+export interface AtualizarBateriaPayload {
   volume_solo?: number | null;
   volume_extrator?: number | null;
   leitura_branco?: number | null;
@@ -67,6 +75,18 @@ export const calibracaoService = {
     await api.delete(`${BASE}${id}/`);
   },
 
+  /** Atualiza parametros da bateria (volumes, branco, ativo). */
+  async atualizarBateria(
+    id: number,
+    payload: AtualizarBateriaPayload,
+  ): Promise<BateriaCalibracaoComPontos> {
+    const { data } = await api.patch<BateriaCalibracaoComPontos>(
+      `${BASE}${id}/`,
+      payload,
+    );
+    return data;
+  },
+
   /** Adiciona um ponto de calibração a uma bateria. Dispara recálculo da equação. */
   async adicionarPonto(
     bateriaId: number,
@@ -82,5 +102,22 @@ export const calibracaoService = {
   /** Remove um ponto específico. Dispara recálculo da equação. */
   async removerPonto(pontoId: number): Promise<void> {
     await api.delete(`/pontos/${pontoId}/`);
+  },
+
+  /**
+   * Retorna a bateria ativa para o equipamento/elemento informado, ou null.
+   * Usado pela tela de Entrada em Lote para exibir a curva do dia.
+   */
+  async buscarBateriaAtiva(
+    equipamento: Equipamento,
+    elemento: Elemento,
+  ): Promise<BateriaCalibracaoComPontos | null> {
+    const { data } = await api.get(BASE, {
+      params: { equipamento, elemento, ativo: true },
+    });
+    const lista: BateriaCalibracaoComPontos[] = Array.isArray(data)
+      ? data
+      : (data.results ?? []);
+    return lista[0] ?? null;
   },
 };

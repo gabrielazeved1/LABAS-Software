@@ -1,7 +1,10 @@
+import logging
 from django.db.models.signals import pre_save, post_save, post_delete
 from django.dispatch import receiver
 from decimal import Decimal
 from .models import AnaliseSolo, BateriaCalibracao, LeituraEquipamento, PontoCalibracao
+
+logger = logging.getLogger(__name__)
 
 from src.application.equipamentos.absorcao_atomica import CalculadoraAbsorcaoAtomica
 from src.application.equipamentos.fotometro_chama import CalculadoraFotometroChama
@@ -48,6 +51,13 @@ def atualizar_equacao_da_bateria(sender, instance, **kwargs):
 
     if pontos.count() >= 2:
         x_padroes = [p.concentracao for p in pontos]
+        print(
+            "[CURVA DEBUG] Bateria %s (%s/%s) pontos=%s",
+            bateria.id,
+            bateria.equipamento,
+            bateria.elemento,
+            list(zip(x_padroes, [p.absorvancia for p in pontos])),
+        )
 
         if bateria.equipamento == "ES":
             y_lidos = []
@@ -57,7 +67,13 @@ def atualizar_equacao_da_bateria(sender, instance, **kwargs):
                     bateria.coeficiente_angular_a = bateria.coeficiente_linear_b = (
                         bateria.r_quadrado
                     ) = None
-                    bateria.save()
+                    bateria.save(
+                        update_fields=[
+                            "coeficiente_angular_a",
+                            "coeficiente_linear_b",
+                            "r_quadrado",
+                        ]
+                    )
                     return
                 # Converte Transmitancia lida na curva para Absorbancia (Lei de Beer)
                 y_lidos.append(Decimal("2") - p.absorvancia.log10())
@@ -70,15 +86,62 @@ def atualizar_equacao_da_bateria(sender, instance, **kwargs):
             bateria.coeficiente_angular_a = motor.a
             bateria.coeficiente_linear_b = motor.b
             bateria.r_quadrado = motor.r2.quantize(Decimal("0.000001"))
-            bateria.save()
+            bateria.save(
+                update_fields=[
+                    "coeficiente_angular_a",
+                    "coeficiente_linear_b",
+                    "r_quadrado",
+                ]
+            )
+            logger.info(
+                "[CURVA OK] Bateria %s (%s/%s): y = %sx + %s | R²=%s",
+                bateria.id,
+                bateria.equipamento,
+                bateria.elemento,
+                bateria.coeficiente_angular_a,
+                bateria.coeficiente_linear_b,
+                bateria.r_quadrado,
+            )
         except Exception as e:
-            print(f"[ERRO CURVA] Falha ao processar regressao linear: {e}")
+            logger.error(
+                "[ERRO CURVA] Bateria %s (%s/%s) com %s pontos: %s",
+                bateria.id,
+                bateria.equipamento,
+                bateria.elemento,
+                len(x_padroes),
+                e,
+            )
+            print(
+                "[ERRO CURVA] Bateria %s (%s/%s) com %s pontos: %s",
+                bateria.id,
+                bateria.equipamento,
+                bateria.elemento,
+                len(x_padroes),
+                e,
+            )
+            # Invalida a curva para que a UI exiba aviso correto
+            bateria.coeficiente_angular_a = None
+            bateria.coeficiente_linear_b = None
+            bateria.r_quadrado = None
+            bateria.save(
+                update_fields=[
+                    "coeficiente_angular_a",
+                    "coeficiente_linear_b",
+                    "r_quadrado",
+                ]
+            )
     else:
         # Reseta os coeficientes se nao houver pontos suficientes para formar uma reta
         bateria.coeficiente_angular_a = bateria.coeficiente_linear_b = (
             bateria.r_quadrado
         ) = None
-        bateria.save()
+        bateria.save(
+            update_fields=[
+                "coeficiente_angular_a",
+                "coeficiente_linear_b",
+                "r_quadrado",
+            ]
+        )
 
 
 # =============================================================================
