@@ -80,6 +80,26 @@ class ClienteSerializer(serializers.ModelSerializer):
         fields = ["codigo", "nome", "municipio", "area"]
 
 
+class ClienteCadastroSerializer(serializers.ModelSerializer):
+    """
+    CRUD de clientes pelo staff.
+    Nao cria conta de usuario — apenas dados cadastrais.
+    O campo `codigo` e imutavel apos a criacao (read_only no update).
+    """
+
+    class Meta:
+        model = Cliente
+        fields = ["codigo", "nome", "contato", "municipio", "area", "observacoes"]
+
+    def validate_codigo(self, value):
+        # Na atualizacao (instance ja existe), ignora a validacao de unicidade
+        if self.instance and self.instance.codigo == value:
+            return value
+        if Cliente.objects.filter(codigo=value).exists():
+            raise serializers.ValidationError("Ja existe um cliente com este codigo.")
+        return value
+
+
 # Serializer principal para os resultados das analises quimicas
 class AnaliseSoloSerializer(serializers.ModelSerializer):
     """

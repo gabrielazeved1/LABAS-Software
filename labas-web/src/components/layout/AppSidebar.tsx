@@ -11,6 +11,7 @@ import Typography from "@mui/material/Typography";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import ScienceIcon from "@mui/icons-material/Science";
 import AssignmentIcon from "@mui/icons-material/Assignment";
+import PeopleIcon from "@mui/icons-material/People";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -27,6 +28,7 @@ const navComum = [
 /** Itens de navegação exclusivos de staff */
 const navStaff = [
   { label: "Calibração", icon: <ScienceIcon />, to: "/calibracao" },
+  { label: "Clientes", icon: <PeopleIcon />, to: "/clientes" },
 ];
 
 /**

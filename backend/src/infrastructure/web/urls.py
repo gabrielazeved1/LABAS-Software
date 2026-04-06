@@ -62,4 +62,17 @@ urlpatterns = [
         views.LeituraEquipamentoCreateView.as_view(),
         name="leitura_create",
     ),
+    # ---------------------------------------------------------
+    # 5 GESTAO DE CLIENTES (staff only)
+    # ---------------------------------------------------------
+    path(
+        "clientes/",
+        views.ClienteListCreateView.as_view(),
+        name="clientes_list_create",
+    ),
+    path(
+        "clientes/<str:codigo>/",
+        views.ClienteDetailView.as_view(),
+        name="cliente_detail",
+    ),
 ]

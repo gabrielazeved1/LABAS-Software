@@ -19,6 +19,9 @@ const CalibracaoFormPage = lazy(
 const EntradaLotePage = lazy(
   () => import("./pages/operacao-lote/EntradaLotePage"),
 );
+const LaudoFormPage = lazy(() => import("./pages/laudos/LaudoFormPage"));
+const ClientesPage = lazy(() => import("./pages/clientes/ClientesPage"));
+const ClienteFormPage = lazy(() => import("./pages/clientes/ClienteFormPage"));
 
 const Spinner = () => (
   <Box display="flex" justifyContent="center" py={8}>
@@ -83,6 +86,46 @@ export default function App() {
             <AppShell>
               <Suspense fallback={<Spinner />}>
                 <EntradaLotePage />
+              </Suspense>
+            </AppShell>
+          }
+        />
+        <Route
+          path="/laudos/novo"
+          element={
+            <AppShell>
+              <Suspense fallback={<Spinner />}>
+                <LaudoFormPage />
+              </Suspense>
+            </AppShell>
+          }
+        />
+        <Route
+          path="/clientes"
+          element={
+            <AppShell>
+              <Suspense fallback={<Spinner />}>
+                <ClientesPage />
+              </Suspense>
+            </AppShell>
+          }
+        />
+        <Route
+          path="/clientes/novo"
+          element={
+            <AppShell>
+              <Suspense fallback={<Spinner />}>
+                <ClienteFormPage />
+              </Suspense>
+            </AppShell>
+          }
+        />
+        <Route
+          path="/clientes/:codigo/editar"
+          element={
+            <AppShell>
+              <Suspense fallback={<Spinner />}>
+                <ClienteFormPage />
               </Suspense>
             </AppShell>
           }
