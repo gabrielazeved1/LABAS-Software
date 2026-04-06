@@ -3,7 +3,7 @@
 > **Tech Lead:** Gabriel Azevedo | **Dev:** Sabrina  
 > **Stack:** React 19 + TypeScript + MUI v7 + React Hook Form + Zod + Axios  
 > **API:** Django REST Framework + JWT (SimpleJWT) — `http://localhost:8000/api/`  
-> **Última atualização:** 03/04/2026
+> **Última atualização:** 06/04/2026
 
 ---
 
@@ -181,6 +181,7 @@ Regras de ouro:
 6. Sempre exibir loading
 7. Campos calculados sao somente leitura
 8. `n_lab` segue `AAAA/NNN`
+9. **MUI Grid:** usar sempre `import { Grid } from "@mui/material"` com `<Grid container>` e `<Grid size={{ xs, md }}>` (Grid v2). Nunca usar `@mui/material/Grid2` ou `@mui/material/Unstable_Grid2` — modulos inexistentes neste projeto.
 
 ### Regra de Terminal e Comandos (Mãos no Teclado)
 
@@ -284,11 +285,23 @@ Em seguida, garanta que a palavra `node_modules/` está escrita dentro do seu ar
 
 ### Gabriel — `feat/gabriel/foundation`
 
-- Sprint 0: setup, tema, tipos, base de API e auth
-- Sprint 1: login, register, layout, rotas, shared
-- Sprint 2: calibracao completa
-- Sprint 3: Operacao em Lote (rota /entrada-lote, UI profissional)
-- Sprint 4: formulario de criacao de laudo
+- ✅ Sprint 0: setup, tema, tipos, base de API e auth
+- ✅ Sprint 1: login, register, layout, rotas, shared
+- ✅ Sprint 2: calibracao completa
+- ✅ Sprint 3: Operacao em Lote (rota /entrada-lote, UI profissional)
+- ✅ Sprint 4: formulario de criacao de laudo + dashboard por perfil (staff/cliente)
+  - `src/services/laudoService.ts` — CRUD + PDF (lidar, criar, buscar, atualizar, remover, baixarPdf, listarMeusLaudos, baixarPdfLaudo)
+  - `src/hooks/useLaudoForm.ts` — hook de criacao com Zod + react-hook-form
+  - `src/hooks/useLaudos.ts` — listagem + download de PDF para cliente
+  - `src/schemas/laudoSchemas.ts` — schema Zod com input/output types
+  - `src/pages/laudos/LaudoFormPage.tsx` — formulario de criacao (rota /laudos/novo, staff only)
+  - `src/pages/dashboard/DashboardPlaceholder.tsx` — staff ve cards, cliente ve ClientDashboard
+  - `src/pages/dashboard/components/ClientDashboard.tsx` — area do cliente com laudos recentes e PDF
+- 🔲 Sprint 5: CRUD de clientes (staff only)
+  - **Backend:** serializer `ClienteCadastroSerializer` + views `ClienteListCreateView` / `ClienteDetailView` + rotas `/clientes/` e `/clientes/<codigo>/`
+  - **Frontend — Bloco 1:** atualizar `src/types/cliente.ts` + `src/services/clienteService.ts` (adicionar criar, atualizar, remover)
+  - **Frontend — Bloco 2:** `src/schemas/clienteSchemas.ts` (Zod) + `src/hooks/useClientes.ts` (listagem) + `src/hooks/useClienteForm.ts` (criacao/edicao)
+  - **Frontend — Bloco 3:** `src/pages/clientes/ClientesPage.tsx` (tabela MUI com acoes) + `src/pages/clientes/ClienteFormPage.tsx` (formulario criar/editar) + rota `/clientes` (staff only) + link na sidebar
 
 ### Sabrina — `feat/sabrina/laudos`
 
@@ -297,7 +310,7 @@ Em seguida, garanta que a palavra `node_modules/` está escrita dentro do seu ar
 
 Zonas sem conflito:
 
-- Gabriel: theme, types, api, auth, contexts, layout, shared, calibracao, operacao-lote
+- Gabriel: theme, types, api, auth, contexts, layout, shared, calibracao, operacao-lote, clientes
 - Sabrina: laudos, dashboard, laudoService, hooks de laudo
 
 ---

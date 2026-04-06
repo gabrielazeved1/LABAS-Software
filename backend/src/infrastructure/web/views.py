@@ -17,11 +17,13 @@ from weasyprint import HTML
 from src.infrastructure.database.models import (
     AnaliseSolo,
     BateriaCalibracao,
+    Cliente,
     LeituraEquipamento,
     PontoCalibracao,
 )
 from .serializers import (
     AnaliseSoloSerializer,
+    ClienteCadastroSerializer,
     UserRegistrationSerializer,
     BateriaCalibracaoSerializer,
     BateriaCalibracaoAtivoSerializer,
@@ -370,3 +372,48 @@ class LeituraEquipamentoCreateView(generics.CreateAPIView):
 
         headers = self.get_success_headers(serializer.data)
         return Response(data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+# =============================================================================
+# 6 GESTAO DE CLIENTES (staff only)
+# =============================================================================
+
+
+class ClienteListCreateView(generics.ListCreateAPIView):
+    """
+    GET  /api/clientes/          -> Lista todos os clientes (suporte a ?search=)
+    POST /api/clientes/          -> Cria um novo cliente (somente dados cadastrais)
+    Somente staff tem acesso.
+    """
+
+    serializer_class = ClienteCadastroSerializer
+
+    def get_permissions(self):
+        from rest_framework.permissions import IsAdminUser
+
+        return [IsAuthenticated(), IsAdminUser()]
+
+    def get_queryset(self):
+        qs = Cliente.objects.all().order_by("nome")
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(nome__icontains=search) | qs.filter(codigo__icontains=search)
+        return qs
+
+
+class ClienteDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET    /api/clientes/<codigo>/  -> Detalhe do cliente
+    PATCH  /api/clientes/<codigo>/  -> Atualiza dados cadastrais
+    DELETE /api/clientes/<codigo>/  -> Remove cliente
+    Somente staff tem acesso.
+    """
+
+    serializer_class = ClienteCadastroSerializer
+    queryset = Cliente.objects.all()
+    lookup_field = "codigo"
+
+    def get_permissions(self):
+        from rest_framework.permissions import IsAdminUser
+
+        return [IsAuthenticated(), IsAdminUser()]

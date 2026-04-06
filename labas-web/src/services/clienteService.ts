@@ -1,28 +1,42 @@
 // src/services/clienteService.ts
 import { api } from "./api";
-import type { Cliente } from "../types/cliente";
+import type { Cliente, ClientePayload } from "../types/cliente";
 
-/**
- * Serviço de acesso à API de clientes.
- *
- * Usado principalmente no Autocomplete do formulário de laudo
- * para que o staff selecione o cliente ao criar uma análise.
- *
- * Endpoint: GET /api/clientes/?search=<termo>
- */
 export const clienteService = {
-  /**
-   * Lista clientes com suporte a busca por nome ou código.
-   * @param search - Termo de busca (opcional). Filtra por nome ou código_cliente.
-   */
-  listar: (search?: string) =>
-    api.get<Cliente[]>("/clientes/", {
-      params: search ? { search } : undefined,
-    }),
+  /** Lista clientes. Suporta filtro por ?search= (nome ou código). */
+  listar: async (search?: string): Promise<Cliente[]> => {
+    const { data } = await api.get<Cliente[] | { results: Cliente[] }>(
+      "/clientes/",
+      {
+        params: search ? { search } : undefined,
+      },
+    );
+    return Array.isArray(data) ? data : data.results;
+  },
 
-  /**
-   * Busca um cliente específico pelo código.
-   * @param codigo - Código único do cliente (ex: "2026-001")
-   */
-  buscar: (codigo: string) => api.get<Cliente>(`/clientes/${codigo}/`),
+  /** Busca um cliente pelo código. */
+  buscar: async (codigo: string): Promise<Cliente> => {
+    const { data } = await api.get<Cliente>(`/clientes/${codigo}/`);
+    return data;
+  },
+
+  /** Cria um novo cliente (staff only). */
+  criar: async (payload: ClientePayload): Promise<Cliente> => {
+    const { data } = await api.post<Cliente>("/clientes/", payload);
+    return data;
+  },
+
+  /** Atualiza parcialmente um cliente (staff only). */
+  atualizar: async (
+    codigo: string,
+    payload: Partial<ClientePayload>,
+  ): Promise<Cliente> => {
+    const { data } = await api.patch<Cliente>(`/clientes/${codigo}/`, payload);
+    return data;
+  },
+
+  /** Remove um cliente (staff only). */
+  remover: async (codigo: string): Promise<void> => {
+    await api.delete(`/clientes/${codigo}/`);
+  },
 };

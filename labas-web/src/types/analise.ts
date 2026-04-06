@@ -158,3 +158,11 @@ export type AnaliseSoloPayload = Omit<
   /** Código do cliente — substitui o objeto `cliente` no payload de envio */
   cliente_codigo: string;
 };
+
+/** Resposta paginada padrão do DRF. */
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}

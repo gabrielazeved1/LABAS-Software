@@ -52,8 +52,8 @@ export function useClientes(): UseClientesReturn {
 
       setLoading(true);
       try {
-        const response = await clienteService.listar(search);
-        setClientes(response.data);
+        const resultado = await clienteService.listar(search);
+        setClientes(resultado);
       } catch (err) {
         showApiError(err);
         setClientes([]);
