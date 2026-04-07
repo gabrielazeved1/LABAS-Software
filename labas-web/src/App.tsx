@@ -9,6 +9,7 @@ import StaffRoute from "./components/shared/StaffRoute";
 import AppShell from "./components/layout/AppShell";
 import CircularProgress from "@mui/material/CircularProgress";
 import Box from "@mui/material/Box";
+import LaudosListPage from "./pages/laudos/LaudosListPage";
 
 const CalibracaoListPage = lazy(
   () => import("./pages/calibracao/CalibracaoListPage"),
@@ -37,6 +38,14 @@ export default function App() {
           element={
             <AppShell>
               <DashboardPlaceholder />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/laudos"
+          element={
+            <AppShell>
+              <LaudosListPage />
             </AppShell>
           }
         />
