@@ -191,44 +191,11 @@ export default function LaudoEditPage() {
   };
 
   const colunas: GridColDef<AnaliseSolo>[] = [
-    { field: "n_lab", headerName: "N° Lab", width: 110 },
-    { field: "referencia", headerName: "Referência", flex: 1 },
-    { field: "data_entrada", headerName: "Entrada", width: 110 },
-    {
-      field: "ativo",
-      headerName: "Ativo",
-      width: 90,
-      renderCell: ({ row }) => (
-        <Chip
-          size="small"
-          label={row.ativo ? "Sim" : "Não"}
-          color={row.ativo ? "success" : "default"}
-        />
-      ),
-    },
-    {
-      field: "sb",
-      headerName: "SB",
-      width: 80,
-      valueFormatter: (value: number | null) => value ?? "—",
-    },
-    {
-      field: "ctc",
-      headerName: "CTC",
-      width: 80,
-      valueFormatter: (value: number | null) => value ?? "—",
-    },
-    {
-      field: "v",
-      headerName: "V%",
-      width: 80,
-      valueFormatter: (value: number | null) =>
-        value != null ? `${value}%` : "—",
-    },
     {
       field: "acoes",
       headerName: "Ações",
-      width: 100,
+      width: 140,
+      minWidth: 140,
       sortable: false,
       renderCell: ({ row }) => (
         <Stack direction="row" spacing={0.5}>
@@ -274,6 +241,40 @@ export default function LaudoEditPage() {
           </Tooltip>
         </Stack>
       ),
+    },
+    { field: "n_lab", headerName: "N° Lab", width: 110 },
+    { field: "referencia", headerName: "Referência", flex: 1, minWidth: 120 },
+    { field: "data_entrada", headerName: "Entrada", width: 110 },
+    {
+      field: "ativo",
+      headerName: "Ativo",
+      width: 90,
+      renderCell: ({ row }) => (
+        <Chip
+          size="small"
+          label={row.ativo ? "Sim" : "Não"}
+          color={row.ativo ? "success" : "default"}
+        />
+      ),
+    },
+    {
+      field: "sb",
+      headerName: "SB",
+      width: 80,
+      valueFormatter: (value: number | null) => value ?? "—",
+    },
+    {
+      field: "ctc",
+      headerName: "CTC",
+      width: 80,
+      valueFormatter: (value: number | null) => value ?? "—",
+    },
+    {
+      field: "v",
+      headerName: "V%",
+      width: 80,
+      valueFormatter: (value: number | null) =>
+        value != null ? `${value}%` : "—",
     },
   ];
 

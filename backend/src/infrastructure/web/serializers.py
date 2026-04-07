@@ -169,16 +169,22 @@ class AnaliseSoloSerializer(serializers.ModelSerializer):
     )
 
     def validate(self, data):
-        """Valida unicidade de n_lab no escopo do laudo pai."""
-        laudo = self.context.get("laudo")
+        """Valida unicidade global de n_lab — um n_lab só pode existir em um único laudo."""
         n_lab = data.get("n_lab", getattr(self.instance, "n_lab", None))
-        if laudo and n_lab:
-            qs = AnaliseSolo.objects.filter(laudo=laudo, n_lab=n_lab)
+        if n_lab:
+            qs = AnaliseSolo.objects.filter(n_lab=n_lab)
             if self.instance:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
+                existente = qs.select_related("laudo").first()
                 raise serializers.ValidationError(
-                    {"n_lab": "Já existe uma análise com este N Lab neste laudo."}
+                    {
+                        "n_lab": (
+                            f"N_Lab '{n_lab}' já está cadastrado no laudo "
+                            f"{existente.laudo.codigo_laudo}. "
+                            "Cada amostra só pode pertencer a um único laudo."
+                        )
+                    }
                 )
         return data
 

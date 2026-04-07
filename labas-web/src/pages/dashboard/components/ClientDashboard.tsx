@@ -9,11 +9,11 @@ import {
   Typography,
 } from "@mui/material";
 import StatusChip from "../../../components/shared/StatusChip";
-import type { AnaliseSolo } from "../../../types/analise";
+import type { Laudo } from "../../../types/analise";
 
 interface Props {
-  laudos: AnaliseSolo[];
-  onBaixarPdf: (nLab: string) => void;
+  laudos: Laudo[];
+  onBaixarPdf: (id: number, codigoLaudo: string) => void;
 }
 
 const formatarData = (value: string) => {
@@ -24,8 +24,8 @@ const formatarData = (value: string) => {
   return data.toLocaleDateString("pt-BR");
 };
 
-const ordenarPorEntrada = (a: AnaliseSolo, b: AnaliseSolo) =>
-  new Date(b.data_entrada).getTime() - new Date(a.data_entrada).getTime();
+const ordenarPorEntrada = (a: Laudo, b: Laudo) =>
+  new Date(b.data_emissao).getTime() - new Date(a.data_emissao).getTime();
 
 export default function ClientDashboard({ laudos, onBaixarPdf }: Props) {
   const recentes = [...laudos].sort(ordenarPorEntrada).slice(0, 5);
@@ -53,14 +53,14 @@ export default function ClientDashboard({ laudos, onBaixarPdf }: Props) {
 
               return (
                 <ListItem
-                  key={laudo.n_lab}
+                  key={laudo.id}
                   divider
                   sx={{ px: 0, alignItems: "flex-start" }}
                   secondaryAction={
                     <Button
                       size="small"
                       variant="outlined"
-                      onClick={() => onBaixarPdf(laudo.n_lab)}
+                      onClick={() => onBaixarPdf(laudo.id, laudo.codigo_laudo)}
                     >
                       Baixar PDF
                     </Button>
@@ -77,12 +77,12 @@ export default function ClientDashboard({ laudos, onBaixarPdf }: Props) {
                         }}
                       >
                         <Typography variant="subtitle2" fontWeight={700}>
-                          {laudo.n_lab}
+                          {laudo.codigo_laudo}
                         </Typography>
                         <StatusChip status={status} />
                       </Box>
                     }
-                    secondary={`Entrada: ${formatarData(laudo.data_entrada)}`}
+                    secondary={`Entrada: ${formatarData(laudo.data_emissao)}`}
                   />
                 </ListItem>
               );
