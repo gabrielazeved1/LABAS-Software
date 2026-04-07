@@ -10,18 +10,9 @@ import {
 } from "../schemas/laudoSchemas";
 import { laudoService } from "../services/laudoService";
 import { useSnackbar } from "./useSnackbar";
-import type { AnaliseSoloPayload } from "../types/analise";
+import type { LaudoPayload } from "../types/analise";
 
 const getTodayISO = () => new Date().toISOString().slice(0, 10);
-
-const normalizePayload = (data: LaudoForm): AnaliseSoloPayload => {
-  const entries = Object.entries(data).map(([key, value]) => [
-    key,
-    value === undefined || value === "" ? null : value,
-  ]);
-
-  return Object.fromEntries(entries) as AnaliseSoloPayload;
-};
 
 export function useLaudoForm() {
   const navigate = useNavigate();
@@ -31,21 +22,24 @@ export function useLaudoForm() {
   const form = useForm<LaudoFormInput, unknown, LaudoForm>({
     resolver: zodResolver(laudoSchema),
     defaultValues: {
-      n_lab: "",
       cliente_codigo: "",
-      data_entrada: getTodayISO(),
-      data_saida: "",
+      data_emissao: getTodayISO(),
+      observacoes: "",
     },
   });
 
   const onSubmit = form.handleSubmit(async (data) => {
     setSubmitting(true);
     try {
-      await laudoService.criar(normalizePayload(data));
+      const payload: LaudoPayload = {
+        cliente_codigo: data.cliente_codigo,
+        data_emissao: data.data_emissao,
+        observacoes: data.observacoes || undefined,
+      };
+      const laudo = await laudoService.criar(payload);
       showSuccess("Laudo criado com sucesso.");
-      navigate("/laudos");
+      navigate(`/laudos/${laudo.id}/editar`);
     } catch (err) {
-      // Mapeia erros de campo (400) de volta para os inputs do formulário
       const responseData = (err as { response?: { data?: unknown } })?.response
         ?.data;
       if (responseData && typeof responseData === "object") {
@@ -62,10 +56,7 @@ export function useLaudoForm() {
             hasFieldError = true;
           }
         });
-        // Exibe no Snackbar apenas o que não mapeou para um campo do form
-        if (!hasFieldError) {
-          showApiError(err);
-        }
+        if (!hasFieldError) showApiError(err);
         return;
       }
       showApiError(err);
@@ -74,9 +65,5 @@ export function useLaudoForm() {
     }
   });
 
-  return {
-    form,
-    submitting,
-    onSubmit,
-  };
+  return { form, submitting, onSubmit };
 }

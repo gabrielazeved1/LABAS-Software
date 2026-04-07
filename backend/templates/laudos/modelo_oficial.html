@@ -39,20 +39,17 @@
         <td class="label-cell">Solicitante:</td>
         <td style="width: 38%">{{ cliente.nome }}</td>
 
-        <td class="label-cell">Entrada:</td>
-        <td style="width: 12%">{{ laudo_foco.data_entrada|date:"d/m/Y" }}</td>
+        <td class="label-cell">N° Laudo:</td>
+        <td style="width: 12%">{{ laudo.codigo_laudo }}</td>
 
-        <td class="label-cell">Saída:</td>
-        <td style="width: 12%">
-          {{ laudo_foco.data_saida|date:"d/m/Y"|default:"-" }}
-        </td>
+        <td class="label-cell">Emissão:</td>
+        <td style="width: 12%">{{ laudo.data_emissao|date:"d/m/Y" }}</td>
       </tr>
 
       <tr>
         <td class="label-cell">Obs:</td>
         <td colspan="5">
-          {% if laudo_foco.observacoes %} {{ laudo_foco.observacoes }} {% else
-          %}
+          {% if laudo.observacoes %}{{ laudo.observacoes }}{% else %}
           ------------------------------------------------------------------------------------------------
           {% endif %}
         </td>
@@ -81,6 +78,8 @@
       RESULTADOS DE ANÁLISE QUÍMICA DE SOLO
     </div>
 
+    {% for pagina in paginas %}
+
     <!-- TABELA 1 -->
     <table class="results-table">
       <thead>
@@ -108,7 +107,7 @@
       </thead>
 
       <tbody>
-        {% for item in analises %} {% if item %}
+        {% for item in pagina %}
         <tr>
           <td>{{ item.n_lab }}</td>
           <td>{{ item.referencia|default:"-" }}</td>
@@ -123,11 +122,7 @@
           <td>{{ item.s }}</td>
           <td>{{ item.b }}</td>
         </tr>
-        {% else %}
-        <tr class="row-void">
-          <td colspan="12"></td>
-        </tr>
-        {% endif %} {% endfor %}
+        {% endfor %}
       </tbody>
     </table>
 
@@ -153,7 +148,7 @@
       </thead>
 
       <tbody>
-        {% for item in analises %} {% if item %}
+        {% for item in pagina %}
         <tr>
           <td>{{ item.n_lab }}</td>
           <td>{{ item.ca }}</td>
@@ -165,11 +160,7 @@
           <td>{{ item.mn }}</td>
           <td>{{ item.zn }}</td>
         </tr>
-        {% else %}
-        <tr class="row-void">
-          <td colspan="9"></td>
-        </tr>
-        {% endif %} {% endfor %}
+        {% endfor %}
       </tbody>
     </table>
 
@@ -199,7 +190,7 @@
       </thead>
 
       <tbody>
-        {% for item in analises %} {% if item %}
+        {% for item in pagina %}
         <tr>
           <td>{{ item.n_lab }}</td>
           <td>{{ item.sb }}</td>
@@ -213,13 +204,13 @@
           <td>{{ item.ca_k }}</td>
           <td>{{ item.mg_k }}</td>
         </tr>
-        {% else %}
-        <tr class="row-void">
-          <td colspan="11"></td>
-        </tr>
-        {% endif %} {% endfor %}
+        {% endfor %}
       </tbody>
     </table>
+
+    {% if not forloop.last %}
+    <div style="page-break-after: always"></div>
+    {% endif %} {% endfor %}
 
     <!-- RODAPÉ -->
     <div class="footer-section">

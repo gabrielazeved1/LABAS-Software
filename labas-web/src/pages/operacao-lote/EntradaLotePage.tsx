@@ -257,7 +257,7 @@ export default function EntradaLotePage() {
   return (
     <Box>
       <PageHeader
-        title="Operação em Lote"
+        title="Amostras"
         subtitle="Bancada de digitação de leituras brutas por elemento"
       />
 

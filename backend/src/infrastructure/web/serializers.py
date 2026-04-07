@@ -1,10 +1,10 @@
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
 from django.db import transaction, IntegrityError
 from src.infrastructure.database.models import (
     Cliente,
+    Laudo,
     AnaliseSolo,
     BateriaCalibracao,
     LeituraEquipamento,
@@ -81,6 +81,54 @@ class ClienteSerializer(serializers.ModelSerializer):
         fields = ["codigo", "nome", "municipio", "area"]
 
 
+class LaudoSerializer(serializers.ModelSerializer):
+    """
+    Serializer do cabeçalho do laudo.
+    Leitura: retorna objeto cliente aninhado.
+    Escrita: recebe cliente_codigo para resolucao.
+    """
+
+    cliente = ClienteSerializer(read_only=True)
+    cliente_codigo = serializers.CharField(write_only=True, required=True)
+
+    def create(self, validated_data):
+        cliente_codigo = validated_data.pop("cliente_codigo")
+        try:
+            cliente = Cliente.objects.get(codigo=cliente_codigo)
+        except Cliente.DoesNotExist:
+            raise serializers.ValidationError(
+                {"cliente_codigo": "Cliente nao encontrado com este codigo."}
+            )
+        return Laudo.objects.create(cliente=cliente, **validated_data)
+
+    def update(self, instance, validated_data):
+        cliente_codigo = validated_data.pop("cliente_codigo", None)
+        if cliente_codigo:
+            try:
+                instance.cliente = Cliente.objects.get(codigo=cliente_codigo)
+            except Cliente.DoesNotExist:
+                raise serializers.ValidationError(
+                    {"cliente_codigo": "Cliente nao encontrado com este codigo."}
+                )
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+    class Meta:
+        model = Laudo
+        fields = [
+            "id",
+            "codigo_laudo",
+            "cliente_codigo",
+            "cliente",
+            "data_emissao",
+            "data_saida",
+            "observacoes",
+        ]
+        read_only_fields = ["id", "codigo_laudo"]
+
+
 class ClienteCadastroSerializer(serializers.ModelSerializer):
     """
     CRUD de clientes pelo staff.
@@ -104,61 +152,44 @@ class ClienteCadastroSerializer(serializers.ModelSerializer):
 # Serializer principal para os resultados das analises quimicas
 class AnaliseSoloSerializer(serializers.ModelSerializer):
     """
-    Centraliza a logica de transformacao dos resultados laboratoriais
-    Aplica as validacoes tecnicas necessarias para o padrao UFU
+    Centraliza a logica de transformacao dos resultados laboratoriais.
+    Analise e sempre filha de um Laudo — laudo_id e inferido pelo contexto da view.
     """
 
-    # Inclui os dados do cliente de forma aninhada apenas para leitura
-    cliente = ClienteSerializer(read_only=True)
+    laudo_id = serializers.IntegerField(read_only=True)
 
-    # Campo de escrita: recebe o codigo do cliente para resolucao no create()
-    cliente_codigo = serializers.CharField(write_only=True, required=True)
-
-    # Aplica regra de formato e unicidade para o identificador do laboratorio
+    # Mantém validacao de formato mas unicidade é por laudo (validada em validate())
     n_lab = serializers.CharField(
         validators=[
             RegexValidator(
                 regex=r"^\d{4}/.+$",
                 message="O padrao do N Lab deve ser ANO/NUMERO ex 2026/001",
             ),
-            UniqueValidator(
-                queryset=AnaliseSolo.objects.all(),
-                message="Ja existe um laudo registrado com este N Lab.",
-            ),
         ]
     )
 
-    def create(self, validated_data):
-        cliente_codigo = validated_data.pop("cliente_codigo")
-        try:
-            cliente = Cliente.objects.get(codigo=cliente_codigo)
-        except Cliente.DoesNotExist:
-            raise serializers.ValidationError(
-                {"cliente_codigo": "Cliente nao encontrado com este codigo."}
-            )
-        return AnaliseSolo.objects.create(cliente=cliente, **validated_data)
-
-    def update(self, instance, validated_data):
-        cliente_codigo = validated_data.pop("cliente_codigo", None)
-        if cliente_codigo:
-            try:
-                instance.cliente = Cliente.objects.get(codigo=cliente_codigo)
-            except Cliente.DoesNotExist:
+    def validate(self, data):
+        """Valida unicidade de n_lab no escopo do laudo pai."""
+        laudo = self.context.get("laudo")
+        n_lab = data.get("n_lab", getattr(self.instance, "n_lab", None))
+        if laudo and n_lab:
+            qs = AnaliseSolo.objects.filter(laudo=laudo, n_lab=n_lab)
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
                 raise serializers.ValidationError(
-                    {"cliente_codigo": "Cliente nao encontrado com este codigo."}
+                    {"n_lab": "Já existe uma análise com este N Lab neste laudo."}
                 )
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
-        return instance
+        return data
 
     class Meta:
         model = AnaliseSolo
-        # Mapeia todos os atributos quimicos e fisicos para o formato JSON
         fields = [
+            "id",
+            "laudo_id",
             "n_lab",
-            "cliente_codigo",
-            "cliente",
+            "ativo",
+            "referencia",
             "data_entrada",
             "data_saida",
             "ph_agua",
@@ -183,6 +214,19 @@ class AnaliseSoloSerializer(serializers.ModelSerializer):
             "areia",
             "argila",
             "silte",
+            "sb",
+            "t",
+            "T_maiusculo",
+            "V",
+            "m",
+            "ca_mg",
+            "ca_k",
+            "mg_k",
+            "c_org",
+        ]
+        read_only_fields = [
+            "id",
+            "laudo_id",
             "sb",
             "t",
             "T_maiusculo",
@@ -265,7 +309,7 @@ class AmostraPendenteSerializer(serializers.ModelSerializer):
     Expoe apenas os campos necessarios para identificar a amostra na bancada.
     """
 
-    cliente_nome = serializers.CharField(source="cliente.nome", read_only=True)
+    cliente_nome = serializers.CharField(source="laudo.cliente.nome", read_only=True)
 
     class Meta:
         model = AnaliseSolo
@@ -289,3 +333,44 @@ class LeituraEquipamentoSerializer(serializers.ModelSerializer):
         instance = LeituraEquipamento(**attrs)
         instance.clean()
         return attrs
+
+
+class LeituraEquipamentoDetalheSerializer(serializers.ModelSerializer):
+    """
+    Serializer de leitura para visualizacao e correcao.
+    Expoe elemento e equipamento da bateria para o frontend poder
+    rotular cada linha sem precisar de chamadas adicionais.
+    """
+
+    elemento = serializers.CharField(source="bateria.elemento", read_only=True)
+    elemento_display = serializers.CharField(
+        source="bateria.get_elemento_display", read_only=True
+    )
+    equipamento = serializers.CharField(source="bateria.equipamento", read_only=True)
+    resultado_calculado = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LeituraEquipamento
+        fields = [
+            "id",
+            "bateria",
+            "elemento",
+            "elemento_display",
+            "equipamento",
+            "leitura_bruta",
+            "fator_diluicao",
+            "resultado_calculado",
+        ]
+        read_only_fields = [
+            "id",
+            "bateria",
+            "elemento",
+            "elemento_display",
+            "equipamento",
+            "resultado_calculado",
+        ]
+
+    def get_resultado_calculado(self, obj):
+        campo = obj.bateria.elemento.lower()
+        valor = getattr(obj.analise, campo, None)
+        return float(valor) if valor is not None else None

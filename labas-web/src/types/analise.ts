@@ -1,150 +1,118 @@
 import type { Cliente } from "./cliente";
 
-/**
- * Representa uma análise de solo completa, espelhando o model `AnaliseSolo` do Django.
- *
- * Campos agrupados por equipamento de origem:
- * - pH-metro: ph_agua, ph_cacl2, ph_kcl
- * - Espectrofotômetro: p_m, p_r, p_rem, mo, s, b
- * - Fotômetro de Chama: k, na
- * - Absorção Atômica: ca, mg, cu, fe, mn, zn
- * - Titulação: al, h_al
- * - Granulometria: areia, argila, silte
- *
- * Campos calculados automaticamente pelo backend (somente leitura no frontend):
- * sb, t, T_maiusculo, V, m, ca_mg, ca_k, mg_k, c_org
- */
-export interface AnaliseSolo {
-  /** Identificador do laudo no formato "ANO/NNN" — ex: "2026/001" */
-  n_lab: string;
+// ─── Resposta paginada DRF ────────────────────────────────────────────────────
 
-  /** Cliente (produtor rural) vinculado à amostra */
+export interface PaginatedResponse<T> {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: T[];
+}
+
+// ─── Laudo (cabeçalho) ────────────────────────────────────────────────────────
+
+/** Cabeçalho do documento entregue ao cliente. Pai de N análises. */
+export interface Laudo {
+  id: number;
+  /** Código gerado pelo backend: "L-AAAA/N" — read-only */
+  codigo_laudo: string;
   cliente: Cliente;
+  /** Usado apenas no payload de criação/edição */
+  cliente_codigo?: string;
+  /** Data de entrada das amostras no laboratório */
+  data_emissao: string;
+  /** Data de saída (laudo disponível ao cliente) — nullable */
+  data_saida: string | null;
+  observacoes: string | null;
+}
 
-  /** Data de entrada da amostra no laboratório (formato ISO: "YYYY-MM-DD") */
+export type LaudoPayload = {
+  cliente_codigo: string;
+  data_emissao: string;
+  data_saida?: string | null;
+  observacoes?: string | null;
+};
+
+// ─── AnaliseSolo (amostra individual, filho de Laudo) ─────────────────────────
+
+export interface AnaliseSolo {
+  id: number;
+  laudo_id: number;
+  n_lab: string;
+  ativo: boolean;
+  referencia: string | null;
   data_entrada: string;
-
-  /** Data de conclusão do laudo. Null enquanto ainda em análise */
   data_saida: string | null;
 
-  // ─── pH-metro ────────────────────────────────────────────────────────────────
-
-  /** pH em água */
+  // pH-metro
   ph_agua: number | null;
-
-  /** pH em solução de CaCl₂ */
   ph_cacl2: number | null;
-
-  /** pH em solução de KCl */
   ph_kcl: number | null;
 
-  // ─── Espectrofotômetro ────────────────────────────────────────────────────────
-
-  /** Fósforo extraído pelo método Mehlich (mg/dm³) */
+  // Espectrofotômetro
   p_m: number | null;
-
-  /** Fósforo extraído pelo método Resina (mg/dm³) */
   p_r: number | null;
-
-  /** Fósforo Remanescente — indica capacidade de adsorção do solo (mg/L) */
   p_rem: number | null;
-
-  /** Matéria Orgânica (g/kg) */
   mo: number | null;
-
-  /** Enxofre (mg/dm³) */
   s: number | null;
-
-  /** Boro (mg/dm³) */
   b: number | null;
 
-  // ─── Fotômetro de Chama ───────────────────────────────────────────────────────
-
-  /** Potássio (cmolc/dm³) */
+  // Fotômetro de Chama
   k: number | null;
-
-  /** Sódio (mg/dm³) */
   na: number | null;
 
-  // ─── Absorção Atômica ─────────────────────────────────────────────────────────
-
-  /** Cálcio (cmolc/dm³) */
+  // Absorção Atômica
   ca: number | null;
-
-  /** Magnésio (cmolc/dm³) */
   mg: number | null;
-
-  /** Cobre (mg/dm³) */
   cu: number | null;
-
-  /** Ferro (mg/dm³) */
   fe: number | null;
-
-  /** Manganês (mg/dm³) */
   mn: number | null;
-
-  /** Zinco (mg/dm³) */
   zn: number | null;
 
-  // ─── Titulação ────────────────────────────────────────────────────────────────
-
-  /** Alumínio trocável (cmolc/dm³) */
+  // Titulação
   al: number | null;
-
-  /** Acidez Potencial — Hidrogênio + Alumínio (cmolc/dm³) */
   h_al: number | null;
 
-  // ─── Granulometria ────────────────────────────────────────────────────────────
-
-  /** Areia (g/kg) */
+  // Granulometria
   areia: number | null;
-
-  /** Argila (g/kg) */
   argila: number | null;
-
-  /** Silte (g/kg) */
   silte: number | null;
 
-  // ─── Calculados pelo backend (read-only no frontend) ─────────────────────────
-
-  /** Soma de Bases: Ca + Mg + K + Na (cmolc/dm³) */
+  // Calculados pelo backend (read-only)
   sb: number | null;
-
-  /** CTC Efetiva: SB + Al (cmolc/dm³) */
   t: number | null;
-
-  /** CTC a pH 7,0: SB + H+Al (cmolc/dm³) */
   T_maiusculo: number | null;
-
-  /** Saturação por Bases: (SB / T) × 100 (%) */
   V: number | null;
-
-  /** Saturação por Alumínio: (Al / t) × 100 (%) */
   m: number | null;
-
-  /** Relação Ca/Mg */
   ca_mg: number | null;
-
-  /** Relação Ca/K */
   ca_k: number | null;
-
-  /** Relação Mg/K */
   mg_k: number | null;
-
-  /** Carbono Orgânico (g/kg) */
   c_org: number | null;
 }
 
-/**
- * Payload para criação e edição de laudos via API.
- *
- * Remove os campos calculados pelo backend (somente leitura) e
- * substitui o objeto `cliente` pelo código do cliente (`cliente_codigo`),
- * conforme esperado pelo serializer do Django.
- */
-export type AnaliseSoloPayload = Omit<
-  AnaliseSolo,
-  | "cliente"
+// ─── LeituraEquipamento (bancada) ─────────────────────────────────────────────
+
+/** Leitura bruta de um elemento registrada na bancada, com resultado calculado. */
+export interface LeituraDetalhe {
+  id: number;
+  bateria: number;
+  elemento: string; // ex: "Ca", "Mg", "K"
+  elemento_display: string; // ex: "Cálcio", "Magnésio"
+  equipamento: string; // ex: "AA", "FC"
+  leitura_bruta: number;
+  fator_diluicao: number | null;
+  resultado_calculado: number | null;
+}
+
+export type LeituraCorrecaoPayload = {
+  leitura_bruta: number;
+  fator_diluicao?: number | null;
+};
+
+/** Campos calculados — nunca enviados no payload. */
+type CamposCalculados =
+  | "id"
+  | "laudo_id"
   | "sb"
   | "t"
   | "T_maiusculo"
@@ -153,16 +121,6 @@ export type AnaliseSoloPayload = Omit<
   | "ca_mg"
   | "ca_k"
   | "mg_k"
-  | "c_org"
-> & {
-  /** Código do cliente — substitui o objeto `cliente` no payload de envio */
-  cliente_codigo: string;
-};
+  | "c_org";
 
-/** Resposta paginada padrão do DRF. */
-export interface PaginatedResponse<T> {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: T[];
-}
+export type AnaliseSoloPayload = Omit<AnaliseSolo, CamposCalculados>;

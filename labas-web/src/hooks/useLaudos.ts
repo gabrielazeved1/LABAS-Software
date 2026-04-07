@@ -1,25 +1,25 @@
 import { useCallback, useEffect, useState } from "react";
 import { laudoService } from "../services/laudoService";
 import { useSnackbar } from "./useSnackbar";
-import type { AnaliseSolo } from "../types/analise";
+import type { Laudo } from "../types/analise";
 
 export interface UseLaudosResult {
-  laudos: AnaliseSolo[];
+  laudos: Laudo[];
   loading: boolean;
-  deletando: string | null; // n_lab sendo deletado (para loading por linha)
-  baixarPdf: (nLab: string) => Promise<void>;
-  excluir: (nLab: string) => Promise<void>;
+  deletando: number | null;
+  baixarPdf: (id: number, codigoLaudo: string) => Promise<void>;
+  excluir: (id: number) => Promise<void>;
   recarregar: () => void;
 }
 
-const criarNomeArquivo = (nLab: string) =>
-  `laudo_${nLab.replace("/", "-")}.pdf`;
+const criarNomeArquivo = (codigoLaudo: string) =>
+  `laudo_${codigoLaudo.replace("/", "-")}.pdf`;
 
 export function useLaudos(): UseLaudosResult {
   const { showSuccess, showApiError } = useSnackbar();
-  const [laudos, setLaudos] = useState<AnaliseSolo[]>([]);
+  const [laudos, setLaudos] = useState<Laudo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deletando, setDeletando] = useState<string | null>(null);
+  const [deletando, setDeletando] = useState<number | null>(null);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -38,13 +38,13 @@ export function useLaudos(): UseLaudosResult {
   }, [carregar]);
 
   const baixarPdf = useCallback(
-    async (nLab: string) => {
+    async (id: number, codigoLaudo: string) => {
       try {
-        const blob = await laudoService.baixarPdf(nLab);
+        const blob = await laudoService.baixarPdf(id);
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = criarNomeArquivo(nLab);
+        link.download = criarNomeArquivo(codigoLaudo);
         link.style.display = "none";
         document.body.appendChild(link);
         link.click();
@@ -58,12 +58,12 @@ export function useLaudos(): UseLaudosResult {
   );
 
   const excluir = useCallback(
-    async (nLab: string) => {
-      setDeletando(nLab);
+    async (id: number) => {
+      setDeletando(id);
       try {
-        await laudoService.remover(nLab);
-        showSuccess(`Laudo ${nLab} excluído com sucesso.`);
-        setLaudos((prev) => prev.filter((l) => l.n_lab !== nLab));
+        await laudoService.remover(id);
+        showSuccess("Laudo excluído com sucesso.");
+        setLaudos((prev) => prev.filter((l) => l.id !== id));
       } catch (err) {
         showApiError(err);
       } finally {

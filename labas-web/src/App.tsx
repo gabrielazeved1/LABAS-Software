@@ -21,6 +21,7 @@ const EntradaLotePage = lazy(
 );
 const LaudoFormPage = lazy(() => import("./pages/laudos/LaudoFormPage"));
 const LaudoEditPage = lazy(() => import("./pages/laudos/LaudoEditPage"));
+const LaudoDetalhePage = lazy(() => import("./pages/laudos/LaudoDetalhePage"));
 const LaudosPage = lazy(() => import("./pages/laudos/LaudosPage"));
 const ClientesPage = lazy(() => import("./pages/clientes/ClientesPage"));
 const ClienteFormPage = lazy(() => import("./pages/clientes/ClienteFormPage"));
@@ -54,6 +55,16 @@ export default function App() {
             <AppShell>
               <Suspense fallback={<Spinner />}>
                 <LaudosPage />
+              </Suspense>
+            </AppShell>
+          }
+        />
+        <Route
+          path="/laudos/:id"
+          element={
+            <AppShell>
+              <Suspense fallback={<Spinner />}>
+                <LaudoDetalhePage />
               </Suspense>
             </AppShell>
           }
@@ -113,7 +124,7 @@ export default function App() {
           }
         />
         <Route
-          path="/laudos/:nLab/editar"
+          path="/laudos/:id/editar"
           element={
             <AppShell>
               <Suspense fallback={<Spinner />}>

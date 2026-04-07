@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, transaction
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
@@ -33,15 +33,59 @@ class Cliente(models.Model):
         verbose_name_plural = "Clientes"
 
 
+class Laudo(models.Model):
+    """
+    Cabeçalho do documento entregue ao cliente.
+    Agrupa N análises de solo (AnaliseSolo) em um único laudo.
+    O código é gerado automaticamente no formato L-AAAA/N.
+    """
+
+    codigo_laudo = models.CharField(
+        max_length=20,
+        unique=True,
+        editable=False,
+        verbose_name="Código do Laudo",
+    )
+    cliente = models.ForeignKey(
+        Cliente, on_delete=models.CASCADE, related_name="laudos"
+    )
+    data_emissao = models.DateField(
+        default=timezone.now, verbose_name="Data de Entrada"
+    )
+    data_saida = models.DateField(blank=True, null=True, verbose_name="Data de Saída")
+    observacoes = models.TextField(blank=True, null=True, verbose_name="Observações")
+
+    def save(self, *args, **kwargs):
+        if not self.codigo_laudo:
+            with transaction.atomic():
+                ano = timezone.now().year
+                count = (
+                    Laudo.objects.filter(codigo_laudo__startswith=f"L-{ano}/")
+                    .select_for_update()
+                    .count()
+                )
+                self.codigo_laudo = f"L-{ano}/{count + 1}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.codigo_laudo} — {self.cliente.nome}"
+
+    class Meta:
+        verbose_name = "Laudo"
+        verbose_name_plural = "Laudos"
+
+
 class AnaliseSolo(models.Model):
     """
-    Entidade central do sistema (O Laudo).
+    Amostra individual de solo. Filho de Laudo (N análises por laudo, máx 50).
     Atributos agora possuem default=0 para evitar erros matematicos e nulos na API.
     """
 
-    n_lab = models.CharField(max_length=50, unique=True, verbose_name="N Lab")
-    cliente = models.ForeignKey(
-        Cliente, on_delete=models.CASCADE, related_name="analises"
+    n_lab = models.CharField(max_length=50, verbose_name="N Lab")
+    laudo = models.ForeignKey(Laudo, on_delete=models.CASCADE, related_name="analises")
+    ativo = models.BooleanField(default=True, verbose_name="Ativo")
+    referencia = models.CharField(
+        max_length=100, blank=True, null=True, verbose_name="Referência Cliente"
     )
     data_entrada = models.DateField(default=timezone.now, verbose_name="Data Entrada")
     data_saida = models.DateField(blank=True, null=True, verbose_name="Data Saida")
@@ -314,11 +358,12 @@ class AnaliseSolo(models.Model):
             raise ValidationError({"ph_agua": "O pH deve estar entre 0 e 14."})
 
     def __str__(self):
-        return f"Laudo {self.n_lab} - {self.cliente.nome}"
+        return f"Análise {self.n_lab} — Laudo {self.laudo.codigo_laudo}"
 
     class Meta:
         verbose_name = "Analise de Solo"
         verbose_name_plural = "Analises de Solo"
+        unique_together = [("laudo", "n_lab")]
 
 
 class BateriaCalibracao(models.Model):

@@ -17,14 +17,20 @@ urlpatterns = [
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("me/", views.MeView.as_view(), name="me"),
     # ---------------------------------------------------------
-    # 2 GESTAO DE LAUDOS RECURSOS PROTEGIDOS
+    # 2 GESTAO DE LAUDOS — arquitetura 1:N
     # ---------------------------------------------------------
-    path("meus-laudos/<path:n_lab>/pdf/", views.gerar_laudo_pdf, name="laudo_pdf"),
-    path("meus-laudos/", views.MeusLaudosAPIView.as_view(), name="listar_criar_laudos"),
+    path("laudos/", views.LaudoListCreateView.as_view(), name="laudo_list_create"),
+    path("laudos/<int:pk>/", views.LaudoDetailView.as_view(), name="laudo_detail"),
+    path("laudos/<int:pk>/pdf/", views.gerar_laudo_pdf, name="laudo_pdf"),
     path(
-        "meus-laudos/<path:n_lab>/",
-        views.LaudoDetailAPIView.as_view(),
-        name="laudo_detalhe",
+        "laudos/<int:laudo_pk>/analises/",
+        views.AnaliseSoloListCreateView.as_view(),
+        name="analise_list_create",
+    ),
+    path(
+        "laudos/<int:laudo_pk>/analises/<int:pk>/",
+        views.AnaliseSoloDetailView.as_view(),
+        name="analise_detail",
     ),
     # ---------------------------------------------------------
     # 3 CALIBRACAO DE EQUIPAMENTOS (staff only)
@@ -61,6 +67,16 @@ urlpatterns = [
         "leituras/",
         views.LeituraEquipamentoCreateView.as_view(),
         name="leitura_create",
+    ),
+    path(
+        "leituras/<int:pk>/",
+        views.LeituraEquipamentoDetailView.as_view(),
+        name="leitura_detail",
+    ),
+    path(
+        "analises/<int:analise_id>/leituras/",
+        views.LeiturasPorAnaliseListView.as_view(),
+        name="leituras_por_analise",
     ),
     # ---------------------------------------------------------
     # 5 GESTAO DE CLIENTES (staff only)
