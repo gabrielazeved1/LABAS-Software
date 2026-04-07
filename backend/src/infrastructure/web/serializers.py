@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
 from django.db import transaction, IntegrityError
@@ -110,21 +111,53 @@ class AnaliseSoloSerializer(serializers.ModelSerializer):
     # Inclui os dados do cliente de forma aninhada apenas para leitura
     cliente = ClienteSerializer(read_only=True)
 
-    # Aplica regra de formato para o identificador do laboratorio
+    # Campo de escrita: recebe o codigo do cliente para resolucao no create()
+    cliente_codigo = serializers.CharField(write_only=True, required=True)
+
+    # Aplica regra de formato e unicidade para o identificador do laboratorio
     n_lab = serializers.CharField(
         validators=[
             RegexValidator(
                 regex=r"^\d{4}/.+$",
                 message="O padrao do N Lab deve ser ANO/NUMERO ex 2026/001",
-            )
+            ),
+            UniqueValidator(
+                queryset=AnaliseSolo.objects.all(),
+                message="Ja existe um laudo registrado com este N Lab.",
+            ),
         ]
     )
+
+    def create(self, validated_data):
+        cliente_codigo = validated_data.pop("cliente_codigo")
+        try:
+            cliente = Cliente.objects.get(codigo=cliente_codigo)
+        except Cliente.DoesNotExist:
+            raise serializers.ValidationError(
+                {"cliente_codigo": "Cliente nao encontrado com este codigo."}
+            )
+        return AnaliseSolo.objects.create(cliente=cliente, **validated_data)
+
+    def update(self, instance, validated_data):
+        cliente_codigo = validated_data.pop("cliente_codigo", None)
+        if cliente_codigo:
+            try:
+                instance.cliente = Cliente.objects.get(codigo=cliente_codigo)
+            except Cliente.DoesNotExist:
+                raise serializers.ValidationError(
+                    {"cliente_codigo": "Cliente nao encontrado com este codigo."}
+                )
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
 
     class Meta:
         model = AnaliseSolo
         # Mapeia todos os atributos quimicos e fisicos para o formato JSON
         fields = [
             "n_lab",
+            "cliente_codigo",
             "cliente",
             "data_entrada",
             "data_saida",

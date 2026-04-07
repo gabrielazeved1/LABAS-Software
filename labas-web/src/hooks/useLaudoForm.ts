@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import type { FieldPath } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 import {
@@ -44,6 +45,29 @@ export function useLaudoForm() {
       showSuccess("Laudo criado com sucesso.");
       navigate("/laudos");
     } catch (err) {
+      // Mapeia erros de campo (400) de volta para os inputs do formulário
+      const responseData = (err as { response?: { data?: unknown } })?.response
+        ?.data;
+      if (responseData && typeof responseData === "object") {
+        let hasFieldError = false;
+        (
+          Object.entries(responseData as Record<string, unknown>) as [
+            FieldPath<LaudoFormInput>,
+            unknown,
+          ][]
+        ).forEach(([field, msgs]) => {
+          const message = Array.isArray(msgs) ? msgs[0] : String(msgs);
+          if (message && field in laudoSchema.shape) {
+            form.setError(field, { type: "server", message });
+            hasFieldError = true;
+          }
+        });
+        // Exibe no Snackbar apenas o que não mapeou para um campo do form
+        if (!hasFieldError) {
+          showApiError(err);
+        }
+        return;
+      }
       showApiError(err);
     } finally {
       setSubmitting(false);
