@@ -291,22 +291,27 @@ Em seguida, garanta que a palavra `node_modules/` está escrita dentro do seu ar
 - ✅ Sprint 3: Operacao em Lote (rota /entrada-lote, UI profissional)
 - ✅ Sprint 4: formulario de criacao de laudo + dashboard por perfil (staff/cliente)
   - `src/services/laudoService.ts` — CRUD + PDF (lidar, criar, buscar, atualizar, remover, baixarPdf, listarMeusLaudos, baixarPdfLaudo)
-  - `src/hooks/useLaudoForm.ts` — hook de criacao com Zod + react-hook-form
+  - `src/hooks/useLaudoForm.ts` — hook de criacao com Zod + react-hook-form (incl. mapeamento de erros de API para campos do form)
   - `src/hooks/useLaudos.ts` — listagem + download de PDF para cliente
   - `src/schemas/laudoSchemas.ts` — schema Zod com input/output types
   - `src/pages/laudos/LaudoFormPage.tsx` — formulario de criacao (rota /laudos/novo, staff only)
   - `src/pages/dashboard/DashboardPlaceholder.tsx` — staff ve cards, cliente ve ClientDashboard
   - `src/pages/dashboard/components/ClientDashboard.tsx` — area do cliente com laudos recentes e PDF
-- 🔲 Sprint 5: CRUD de clientes (staff only)
-  - **Backend:** serializer `ClienteCadastroSerializer` + views `ClienteListCreateView` / `ClienteDetailView` + rotas `/clientes/` e `/clientes/<codigo>/`
-  - **Frontend — Bloco 1:** atualizar `src/types/cliente.ts` + `src/services/clienteService.ts` (adicionar criar, atualizar, remover)
-  - **Frontend — Bloco 2:** `src/schemas/clienteSchemas.ts` (Zod) + `src/hooks/useClientes.ts` (listagem) + `src/hooks/useClienteForm.ts` (criacao/edicao)
-  - **Frontend — Bloco 3:** `src/pages/clientes/ClientesPage.tsx` (tabela MUI com acoes) + `src/pages/clientes/ClienteFormPage.tsx` (formulario criar/editar) + rota `/clientes` (staff only) + link na sidebar
+  - `backend/serializers.py` — UniqueValidator em n_lab + create()/update() com resolucao de cliente_codigo
+- ✅ Sprint 5: CRUD de clientes (staff only)
+  - **Backend:** `ClienteCadastroSerializer` + `ClienteListCreateView` / `ClienteDetailView` + rotas `/clientes/` e `/clientes/<codigo>/`
+  - `src/types/cliente.ts` + `src/services/clienteService.ts`
+  - `src/schemas/clienteSchemas.ts` + `src/hooks/useClientes.ts` + `src/hooks/useClienteForm.ts`
+  - `src/pages/clientes/ClientesPage.tsx` + `src/pages/clientes/ClienteFormPage.tsx`
+- 🔲 Sprint 6: Pagina de laudos — lista completa + editar + excluir (staff) — branch `feat/gabriel/laudos-page`
+  - **Bloco 1 — Hook:** `src/hooks/useLaudos.ts` — refatorar para suportar listagem completa (staff ve todos, cliente ve os seus), paginacao, delete com confirmacao
+  - **Bloco 2 — UI:** `src/pages/laudos/LaudosPage.tsx` — tabela MUI DataGrid com acoes (ver PDF, editar, excluir); botao "Novo Laudo" para staff; filtro por n_lab/cliente
+  - **Bloco 3 — Edicao:** `src/pages/laudos/LaudoEditPage.tsx` — rota `/laudos/:nLab/editar` (staff only); reusa `LaudoFormPage` com dados pre-carregados via `laudoService.buscar()`
 
 ### Sabrina — `feat/sabrina/laudos`
 
-- Sprint 1: dashboard e lista de laudos
-- Sprint 2: detalhe do laudo e PDF
+- ~~Sprint 1: dashboard e lista de laudos~~ — assumido pelo Gabriel (Sprint 6)
+- ~~Sprint 2: detalhe do laudo e PDF~~ — assumido pelo Gabriel (Sprint 6)
 
 Zonas sem conflito:
 

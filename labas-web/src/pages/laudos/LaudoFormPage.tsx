@@ -142,8 +142,11 @@ export default function LaudoFormPage() {
       />
 
       <Alert severity="info" sx={{ mb: 3 }}>
-        Campos calculados (SB, CTC, V%, m%) são preenchidos automaticamente após
-        salvar.
+        Crie o laudo com no mínimo <strong>Nº do laudo</strong> e{" "}
+        <strong>Cliente</strong>. Os valores químicos podem ser deixados em
+        branco e preenchidos depois via <strong>Operação em Lote</strong>.
+        Campos calculados (SB, CTC, V%, m%) são preenchidos automaticamente pelo
+        sistema.
       </Alert>
 
       <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
@@ -158,7 +161,9 @@ export default function LaudoFormPage() {
               label="Nº do laudo"
               placeholder="2026/001"
               error={!!getErrorMessage("n_lab")}
-              helperText={getErrorMessage("n_lab")}
+              helperText={
+                getErrorMessage("n_lab") ?? "Formato: AAAA/NNN — ex: 2026/001"
+              }
               disabled={submitting}
               {...form.register("n_lab")}
             />
