@@ -20,6 +20,8 @@ const EntradaLotePage = lazy(
   () => import("./pages/operacao-lote/EntradaLotePage"),
 );
 const LaudoFormPage = lazy(() => import("./pages/laudos/LaudoFormPage"));
+const LaudoEditPage = lazy(() => import("./pages/laudos/LaudoEditPage"));
+const LaudosPage = lazy(() => import("./pages/laudos/LaudosPage"));
 const ClientesPage = lazy(() => import("./pages/clientes/ClientesPage"));
 const ClienteFormPage = lazy(() => import("./pages/clientes/ClienteFormPage"));
 
@@ -43,6 +45,16 @@ export default function App() {
           element={
             <AppShell>
               <DashboardPlaceholder />
+            </AppShell>
+          }
+        />
+        <Route
+          path="/laudos"
+          element={
+            <AppShell>
+              <Suspense fallback={<Spinner />}>
+                <LaudosPage />
+              </Suspense>
             </AppShell>
           }
         />
@@ -96,6 +108,16 @@ export default function App() {
             <AppShell>
               <Suspense fallback={<Spinner />}>
                 <LaudoFormPage />
+              </Suspense>
+            </AppShell>
+          }
+        />
+        <Route
+          path="/laudos/:nLab/editar"
+          element={
+            <AppShell>
+              <Suspense fallback={<Spinner />}>
+                <LaudoEditPage />
               </Suspense>
             </AppShell>
           }
