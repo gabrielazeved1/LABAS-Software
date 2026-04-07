@@ -3,7 +3,7 @@
 > **Tech Lead:** Gabriel Azevedo | **Dev:** Sabrina  
 > **Stack:** React 19 + TypeScript + MUI v7 + React Hook Form + Zod + Axios  
 > **API:** Django REST Framework + JWT (SimpleJWT) — `http://localhost:8000/api/`  
-> **Última atualização:** 07/04/2026
+> **Última atualização:** 07/04/2026 — Sprint 9 adicionada
 
 ---
 
@@ -330,6 +330,53 @@ Em seguida, garanta que a palavra `node_modules/` está escrita dentro do seu ar
     - `GET|PATCH /api/leituras/:id/` → `LeituraEquipamentoDetailView`
     - `LeituraEquipamentoDetalheSerializer`: expõe `elemento`, `elemento_display`, `equipamento`, `resultado_calculado`
   - **Novos arquivos frontend:** `src/types/analise.ts` (`LeituraDetalhe`, `LeituraCorrecaoPayload`); `src/services/correcaoService.ts`; `src/hooks/useCorrecaoAnalise.ts`; `src/services/analiseService.ts` + método `buscar(laudoId, analiseId)`
+- ⬜ **Sprint 9 — Dashboard do Técnico + Guia de Uso** — branch `feat/gabriel/staff-dashboard`
+
+  > Objetivo: substituir o `DashboardPlaceholder` do staff por um painel interativo com KPIs do laboratório e uma página de guia de uso do sistema.
+
+  ***
+
+  #### Bloco 1 — Infraestrutura de Dados (Tipos e Services)
+
+  **Novos endpoints de backend necessários:**
+  - `GET /api/dashboard/stats/` → retorna KPIs agregados: total de laudos, laudos do mês, total de amostras, amostras do mês, total de clientes, baterias ativas
+  - `GET /api/dashboard/laudos-recentes/` → últimos 5 laudos criados (id, codigo_laudo, cliente_nome, data_emissao, total_analises)
+
+  **Arquivos frontend:**
+  - `src/types/dashboard.ts` — interfaces `DashboardStats` e `LaudoResumo`
+  - `src/services/dashboardService.ts` — `buscarStats(): Promise<DashboardStats>` e `buscarLaudosRecentes(): Promise<LaudoResumo[]>`
+
+  ***
+
+  #### Bloco 2 — Lógica e Estado (Hooks)
+
+  **Arquivos frontend:**
+  - `src/hooks/useDashboardStats.ts` — chama `dashboardService.buscarStats()`, expõe `stats`, `loading`, `erro`
+  - `src/hooks/useDashboardLaudos.ts` — chama `dashboardService.buscarLaudosRecentes()`, expõe `laudos`, `loading`, `erro`
+
+  _Sem schemas Zod neste bloco (dados são somente leitura, sem formulários)._
+
+  ***
+
+  #### Bloco 3 — Interface de Usuário (UI)
+
+  **Arquivos frontend:**
+  - `src/pages/dashboard/StaffDashboard.tsx` — painel principal do técnico:
+    - **Faixa de KPIs** (6 cards MUI com ícones): Laudos Totais, Laudos este Mês, Amostras Totais, Amostras este Mês, Clientes Cadastrados, Baterias Ativas
+    - **Tabela de Laudos Recentes**: últimos 5 laudos com link direto para `/laudos/:id`
+    - **Ações Rápidas**: botões de atalho — "Novo Laudo", "Nova Calibração", "Entrada de Amostras"
+  - `src/pages/dashboard/GuidePage.tsx` — rota `/guia` (privada, acessível a todos os perfis):
+    - Layout em abas MUI (`Tabs`) com seções: **Visão Geral**, **Calibração**, **Entrada de Amostras**, **Laudos**, **Clientes**
+    - Cada seção contém: descrição do módulo, fluxo passo a passo numerado, dicas de uso e capturas de tela (placeholders com `<Box sx={{ bgcolor: 'grey.200' }}>`)
+  - `src/pages/dashboard/DashboardPlaceholder.tsx` — atualizado: staff renderiza `<StaffDashboard />`, cliente mantém `<ClientDashboard />`
+  - `src/App.tsx` — adicionar rota `/guia` com lazy import de `GuidePage`
+  - **Sidebar** — adicionar item "Guia de Uso" com `MenuBookIcon` → `/guia` (visível para todos os perfis autenticados)
+
+  **Regras de UI:**
+  - Cards de KPI usam `sx={{ bgcolor: 'primary.main', color: 'white' }}` para os números e ícone temático (ex: `AssignmentIcon`, `ScienceIcon`, `PeopleIcon`, `BatteryChargingFullIcon`)
+  - Nenhum campo de input nesta tela — é 100% leitura
+  - Responsivo: cards em `Grid size={{ xs: 12, sm: 6, md: 4 }}`, tabela em `Grid size={{ xs: 12 }}`
+  - Skeleton MUI durante loading dos KPIs
 
 ### Sabrina — `feat/sabrina/laudos`
 

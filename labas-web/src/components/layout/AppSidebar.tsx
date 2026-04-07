@@ -13,6 +13,7 @@ import ScienceIcon from "@mui/icons-material/Science";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import PeopleIcon from "@mui/icons-material/People";
 import BiotechIcon from "@mui/icons-material/Biotech";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -24,6 +25,7 @@ interface Props {
 const navComum = [
   { label: "Dashboard", icon: <DashboardIcon />, to: "/dashboard" },
   { label: "Meus Laudos", icon: <AssignmentIcon />, to: "/laudos" },
+  { label: "Guia de Uso", icon: <MenuBookIcon />, to: "/guia" },
 ];
 
 /** Itens de navegação exclusivos de staff */

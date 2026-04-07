@@ -52,12 +52,19 @@ export default function ClienteFormPage() {
   }
 
   return (
-    <Box>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        pt: 2,
+      }}
+    >
       <Typography variant="h5" fontWeight={700} color="primary" gutterBottom>
         {edicao ? "Editar Cliente" : "Novo Cliente"}
       </Typography>
 
-      <Paper variant="outlined" sx={{ p: 3, maxWidth: 600 }}>
+      <Paper variant="outlined" sx={{ p: 3, width: "100%", maxWidth: 560 }}>
         <Stack component="form" onSubmit={onSubmit} spacing={2}>
           <Controller
             name="codigo"
