@@ -529,3 +529,73 @@ class ClienteDetailView(generics.RetrieveUpdateDestroyAPIView):
         from rest_framework.permissions import IsAdminUser
 
         return [IsAuthenticated(), IsAdminUser()]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 6 DASHBOARD DO TÉCNICO
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class DashboardStatsView(APIView):
+    """
+    GET /api/dashboard/stats/
+    Retorna KPIs agregados do laboratório. Somente staff.
+    """
+
+    def get_permissions(self):
+        from rest_framework.permissions import IsAdminUser
+
+        return [IsAuthenticated(), IsAdminUser()]
+
+    def get(self, request):
+        from django.utils import timezone
+        from django.db.models import Count
+
+        hoje = timezone.now().date()
+        primeiro_do_mes = hoje.replace(day=1)
+
+        stats = {
+            "total_laudos": Laudo.objects.count(),
+            "laudos_mes": Laudo.objects.filter(
+                data_emissao__gte=primeiro_do_mes
+            ).count(),
+            "total_amostras": AnaliseSolo.objects.count(),
+            "amostras_mes": AnaliseSolo.objects.filter(
+                data_entrada__gte=primeiro_do_mes
+            ).count(),
+            "total_clientes": Cliente.objects.count(),
+            "baterias_ativas": BateriaCalibracao.objects.filter(ativo=True).count(),
+        }
+        return Response(stats)
+
+
+class DashboardLaudosRecentesView(APIView):
+    """
+    GET /api/dashboard/laudos-recentes/
+    Retorna os 5 laudos criados mais recentemente. Somente staff.
+    """
+
+    def get_permissions(self):
+        from rest_framework.permissions import IsAdminUser
+
+        return [IsAuthenticated(), IsAdminUser()]
+
+    def get(self, request):
+        from django.db.models import Count
+
+        laudos = (
+            Laudo.objects.select_related("cliente")
+            .annotate(total_analises=Count("analises"))
+            .order_by("-id")[:5]
+        )
+        data = [
+            {
+                "id": l.id,
+                "codigo_laudo": l.codigo_laudo,
+                "cliente_nome": l.cliente.nome,
+                "data_emissao": l.data_emissao.isoformat(),
+                "total_analises": l.total_analises,
+            }
+            for l in laudos
+        ]
+        return Response(data)

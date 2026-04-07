@@ -91,4 +91,17 @@ urlpatterns = [
         views.ClienteDetailView.as_view(),
         name="cliente_detail",
     ),
+    # ---------------------------------------------------------
+    # 6 DASHBOARD DO TÉCNICO
+    # ---------------------------------------------------------
+    path(
+        "dashboard/stats/",
+        views.DashboardStatsView.as_view(),
+        name="dashboard_stats",
+    ),
+    path(
+        "dashboard/laudos-recentes/",
+        views.DashboardLaudosRecentesView.as_view(),
+        name="dashboard_laudos_recentes",
+    ),
 ]

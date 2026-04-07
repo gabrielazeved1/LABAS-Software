@@ -25,6 +25,7 @@ const LaudoDetalhePage = lazy(() => import("./pages/laudos/LaudoDetalhePage"));
 const LaudosPage = lazy(() => import("./pages/laudos/LaudosPage"));
 const ClientesPage = lazy(() => import("./pages/clientes/ClientesPage"));
 const ClienteFormPage = lazy(() => import("./pages/clientes/ClienteFormPage"));
+const GuidePage = lazy(() => import("./pages/dashboard/GuidePage"));
 
 const Spinner = () => (
   <Box display="flex" justifyContent="center" py={8}>
@@ -41,6 +42,16 @@ export default function App() {
 
       {/* Rotas protegidas — qualquer usuário autenticado */}
       <Route element={<PrivateRoute />}>
+        <Route
+          path="/guia"
+          element={
+            <AppShell>
+              <Suspense fallback={<Spinner />}>
+                <GuidePage />
+              </Suspense>
+            </AppShell>
+          }
+        />
         <Route
           path="/dashboard"
           element={
