@@ -134,120 +134,127 @@ export default function CalibracaoFormPage() {
 
       {/* ---- Step 1: Dados da Bateria ---- */}
       {activeStep === 0 && (
-        <Paper variant="outlined" sx={{ p: 3, maxWidth: 560 }}>
-          <Stack spacing={2} component="form" onSubmit={handleCriarBateria}>
-            <TextField
-              select
-              label="Equipamento"
-              {...bateriaForm.register("equipamento")}
-              error={!!bateriaForm.formState.errors.equipamento}
-              helperText={bateriaForm.formState.errors.equipamento?.message}
-              defaultValue={equipamentoInicial ?? "AA"}
-            >
-              {EQUIPAMENTOS.map((eq) => (
-                <MenuItem key={eq.value} value={eq.value}>
-                  {eq.label}
-                </MenuItem>
-              ))}
-            </TextField>
+        <Box display="flex" justifyContent="center">
+          <Paper variant="outlined" sx={{ p: 3, width: "100%", maxWidth: 560 }}>
+            <Stack spacing={2} component="form" onSubmit={handleCriarBateria}>
+              <TextField
+                select
+                label="Equipamento"
+                {...bateriaForm.register("equipamento")}
+                error={!!bateriaForm.formState.errors.equipamento}
+                helperText={bateriaForm.formState.errors.equipamento?.message}
+                defaultValue={equipamentoInicial ?? "AA"}
+              >
+                {EQUIPAMENTOS.map((eq) => (
+                  <MenuItem key={eq.value} value={eq.value}>
+                    {eq.label}
+                  </MenuItem>
+                ))}
+              </TextField>
 
-            <TextField
-              select
-              label="Elemento"
-              {...bateriaForm.register("elemento")}
-              error={!!bateriaForm.formState.errors.elemento}
-              helperText={bateriaForm.formState.errors.elemento?.message}
-              defaultValue=""
-            >
-              {elementosFiltrados.map((el) => (
-                <MenuItem key={el} value={el}>
-                  {ELEMENTO_LABEL[el]}
-                </MenuItem>
-              ))}
-            </TextField>
+              <TextField
+                select
+                label="Elemento"
+                {...bateriaForm.register("elemento")}
+                error={!!bateriaForm.formState.errors.elemento}
+                helperText={bateriaForm.formState.errors.elemento?.message}
+                defaultValue=""
+              >
+                {elementosFiltrados.map((el) => (
+                  <MenuItem key={el} value={el}>
+                    {ELEMENTO_LABEL[el]}
+                  </MenuItem>
+                ))}
+              </TextField>
 
-            {/* Campos condicionais */}
-            {REQUER_VOLUMES.includes(bateriaForm.watch("equipamento")) && (
-              <>
+              {/* Campos condicionais */}
+              {REQUER_VOLUMES.includes(bateriaForm.watch("equipamento")) && (
+                <>
+                  <TextField
+                    label="Volume de Solo (dm³)"
+                    type="text"
+                    inputProps={{
+                      inputMode: "decimal",
+                      pattern: "[0-9]*[.,]?[0-9]*",
+                    }}
+                    {...bateriaForm.register("volume_solo", {
+                      setValueAs: (value) =>
+                        normalizeDecimalOptional(String(value)),
+                    })}
+                    error={!!bateriaForm.formState.errors.volume_solo}
+                    helperText={
+                      bateriaForm.formState.errors.volume_solo?.message
+                    }
+                  />
+                  <TextField
+                    label="Volume de Extrator (mL)"
+                    type="text"
+                    inputProps={{
+                      inputMode: "decimal",
+                      pattern: "[0-9]*[.,]?[0-9]*",
+                    }}
+                    {...bateriaForm.register("volume_extrator", {
+                      setValueAs: (value) =>
+                        normalizeDecimalOptional(String(value)),
+                    })}
+                    error={!!bateriaForm.formState.errors.volume_extrator}
+                    helperText={
+                      bateriaForm.formState.errors.volume_extrator?.message
+                    }
+                  />
+                </>
+              )}
+
+              {REQUER_BRANCO.includes(bateriaForm.watch("equipamento")) && (
                 <TextField
-                  label="Volume de Solo (dm³)"
+                  label="Leitura do Branco"
                   type="text"
                   inputProps={{
                     inputMode: "decimal",
                     pattern: "[0-9]*[.,]?[0-9]*",
                   }}
-                  {...bateriaForm.register("volume_solo", {
+                  {...bateriaForm.register("leitura_branco", {
                     setValueAs: (value) =>
                       normalizeDecimalOptional(String(value)),
                   })}
-                  error={!!bateriaForm.formState.errors.volume_solo}
-                  helperText={bateriaForm.formState.errors.volume_solo?.message}
-                />
-                <TextField
-                  label="Volume de Extrator (mL)"
-                  type="text"
-                  inputProps={{
-                    inputMode: "decimal",
-                    pattern: "[0-9]*[.,]?[0-9]*",
-                  }}
-                  {...bateriaForm.register("volume_extrator", {
-                    setValueAs: (value) =>
-                      normalizeDecimalOptional(String(value)),
-                  })}
-                  error={!!bateriaForm.formState.errors.volume_extrator}
+                  error={!!bateriaForm.formState.errors.leitura_branco}
                   helperText={
-                    bateriaForm.formState.errors.volume_extrator?.message
+                    bateriaForm.formState.errors.leitura_branco?.message
                   }
                 />
-              </>
-            )}
+              )}
 
-            {REQUER_BRANCO.includes(bateriaForm.watch("equipamento")) && (
-              <TextField
-                label="Leitura do Branco"
-                type="text"
-                inputProps={{
-                  inputMode: "decimal",
-                  pattern: "[0-9]*[.,]?[0-9]*",
-                }}
-                {...bateriaForm.register("leitura_branco", {
-                  setValueAs: (value) =>
-                    normalizeDecimalOptional(String(value)),
-                })}
-                error={!!bateriaForm.formState.errors.leitura_branco}
-                helperText={
-                  bateriaForm.formState.errors.leitura_branco?.message
+              <FormControlLabel
+                control={
+                  <Switch defaultChecked {...bateriaForm.register("ativo")} />
                 }
+                label="Marcar como bateria ativa"
               />
-            )}
 
-            <FormControlLabel
-              control={
-                <Switch defaultChecked {...bateriaForm.register("ativo")} />
-              }
-              label="Marcar como bateria ativa"
-            />
-
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={submittingBateria}
-              startIcon={
-                submittingBateria ? <CircularProgress size={16} /> : null
-              }
-            >
-              {submittingBateria ? "Criando..." : "Criar Bateria"}
-            </Button>
-          </Stack>
-        </Paper>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={submittingBateria}
+                startIcon={
+                  submittingBateria ? <CircularProgress size={16} /> : null
+                }
+              >
+                {submittingBateria ? "Criando..." : "Criar Bateria"}
+              </Button>
+            </Stack>
+          </Paper>
+        </Box>
       )}
 
       {/* ---- Step 2: Pontos de Calibração ---- */}
       {activeStep === 1 && (
-        <Box>
+        <Box display="flex" justifyContent="center">
           {/* Titulação / pH-metro: sem curva de calibração */}
           {SEM_CURVA_CALIBRACAO.includes(equipamento) ? (
-            <Paper variant="outlined" sx={{ p: 3, maxWidth: 560 }}>
+            <Paper
+              variant="outlined"
+              sx={{ p: 3, width: "100%", maxWidth: 560 }}
+            >
               <Typography variant="body1" mb={2}>
                 Este equipamento não utiliza curva de calibração.
               </Typography>
@@ -260,9 +267,9 @@ export default function CalibracaoFormPage() {
               </Button>
             </Paper>
           ) : (
-            <Box>
+            <Box sx={{ width: "100%", maxWidth: 560 }}>
               {isEdicao && bateria && (
-                <Paper variant="outlined" sx={{ p: 3, mb: 3, maxWidth: 560 }}>
+                <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
                   <Typography variant="subtitle2" mb={2}>
                     Parametros da bateria
                   </Typography>
@@ -408,7 +415,7 @@ export default function CalibracaoFormPage() {
                   </Typography>
                   <Table
                     size="small"
-                    sx={{ mb: 2, maxWidth: 560 }}
+                    sx={{ mb: 2 }}
                     aria-label="Pontos cadastrados"
                   >
                     <TableHead>
@@ -449,11 +456,7 @@ export default function CalibracaoFormPage() {
               <Typography variant="subtitle2" mb={1}>
                 Adicionar novos pontos
               </Typography>
-              <Table
-                size="small"
-                sx={{ mb: 1, maxWidth: 560 }}
-                aria-label="Novos pontos"
-              >
+              <Table size="small" sx={{ mb: 1 }} aria-label="Novos pontos">
                 <TableHead>
                   <TableRow>
                     <TableCell>Concentração (padrão)</TableCell>

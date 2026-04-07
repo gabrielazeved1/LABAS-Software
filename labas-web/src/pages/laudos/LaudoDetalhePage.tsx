@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -7,6 +7,7 @@ import {
   CircularProgress,
   Divider,
   Grid,
+  IconButton,
   Paper,
   Stack,
   Tooltip,
@@ -14,74 +15,17 @@ import {
 } from "@mui/material";
 import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 import { Link as RouterLink, useParams } from "react-router-dom";
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 import PageHeader from "../../components/shared/PageHeader";
 import LoadingOverlay from "../../components/shared/LoadingOverlay";
+import ConfirmDialog from "../../components/shared/ConfirmDialog";
 import { laudoService } from "../../services/laudoService";
 import { useAnalises } from "../../hooks/useAnalises";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { useAuth } from "../../hooks/useAuth";
 import type { Laudo, AnaliseSolo } from "../../types/analise";
-
-// ─── Colunas do DataGrid (somente leitura) ───────────────────────────────────
-
-const colunas: GridColDef<AnaliseSolo>[] = [
-  { field: "n_lab", headerName: "N° Lab", width: 110 },
-  {
-    field: "referencia",
-    headerName: "Referência",
-    width: 150,
-    valueGetter: (_val, row) => row.referencia ?? "—",
-  },
-  { field: "data_entrada", headerName: "Data Entrada", width: 120 },
-  {
-    field: "ativo",
-    headerName: "Status",
-    width: 100,
-    renderCell: ({ value }) =>
-      value ? (
-        <Chip label="Ativa" color="success" size="small" />
-      ) : (
-        <Chip label="Inativa" size="small" />
-      ),
-  },
-  {
-    field: "sb",
-    headerName: "SB",
-    width: 90,
-    type: "number",
-    valueGetter: (_val, row) => row.sb ?? "—",
-  },
-  {
-    field: "T_maiusculo",
-    headerName: "CTC",
-    width: 90,
-    type: "number",
-    valueGetter: (_val, row) => row.T_maiusculo ?? "—",
-  },
-  {
-    field: "V",
-    headerName: "V%",
-    width: 80,
-    type: "number",
-    valueGetter: (_val, row) => row.V ?? "—",
-  },
-  {
-    field: "m",
-    headerName: "m%",
-    width: 80,
-    type: "number",
-    valueGetter: (_val, row) => row.m ?? "—",
-  },
-  {
-    field: "ph_agua",
-    headerName: "pH (água)",
-    width: 100,
-    type: "number",
-    valueGetter: (_val, row) => row.ph_agua ?? "—",
-  },
-];
 
 // ─── Componente ──────────────────────────────────────────────────────────────
 
@@ -97,7 +41,16 @@ export default function LaudoDetalhePage() {
   const [erroFetch, setErroFetch] = useState(false);
   const [baixando, setBaixando] = useState(false);
 
-  const { analises, loading: analisesLoading } = useAnalises(laudoId);
+  const {
+    analises,
+    loading: analisesLoading,
+    remover,
+    removendo,
+  } = useAnalises(laudoId);
+
+  const [confirmarRemocao, setConfirmarRemocao] = useState<AnaliseSolo | null>(
+    null,
+  );
 
   useEffect(() => {
     if (!laudoId || isNaN(laudoId)) {
@@ -114,6 +67,92 @@ export default function LaudoDetalhePage() {
       })
       .finally(() => setBuscando(false));
   }, [laudoId, showApiError]);
+
+  const colunas = useMemo(
+    (): GridColDef<AnaliseSolo>[] => [
+      ...(isStaff
+        ? [
+            {
+              field: "acoes",
+              headerName: "",
+              width: 56,
+              minWidth: 56,
+              sortable: false,
+              renderCell: ({ row }: { row: AnaliseSolo }) => (
+                <Tooltip title="Remover análise">
+                  <span>
+                    <IconButton
+                      size="small"
+                      color="error"
+                      disabled={removendo === row.id}
+                      onClick={() => setConfirmarRemocao(row)}
+                    >
+                      <DeleteIcon fontSize="small" />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              ),
+            } satisfies GridColDef<AnaliseSolo>,
+          ]
+        : []),
+      { field: "n_lab", headerName: "N° Lab", width: 110 },
+      {
+        field: "referencia",
+        headerName: "Referência",
+        flex: 1,
+        minWidth: 120,
+        valueGetter: (_val, row) => row.referencia ?? "—",
+      },
+      { field: "data_entrada", headerName: "Data Entrada", width: 120 },
+      {
+        field: "ativo",
+        headerName: "Status",
+        width: 100,
+        renderCell: ({ value }) =>
+          value ? (
+            <Chip label="Ativa" color="success" size="small" />
+          ) : (
+            <Chip label="Inativa" size="small" />
+          ),
+      },
+      {
+        field: "sb",
+        headerName: "SB",
+        width: 80,
+        type: "number",
+        valueGetter: (_val, row) => row.sb ?? "—",
+      },
+      {
+        field: "T_maiusculo",
+        headerName: "CTC",
+        width: 80,
+        type: "number",
+        valueGetter: (_val, row) => row.T_maiusculo ?? "—",
+      },
+      {
+        field: "V",
+        headerName: "V%",
+        width: 75,
+        type: "number",
+        valueGetter: (_val, row) => row.V ?? "—",
+      },
+      {
+        field: "m",
+        headerName: "m%",
+        width: 75,
+        type: "number",
+        valueGetter: (_val, row) => row.m ?? "—",
+      },
+      {
+        field: "ph_agua",
+        headerName: "pH (água)",
+        width: 95,
+        type: "number",
+        valueGetter: (_val, row) => row.ph_agua ?? "—",
+      },
+    ],
+    [isStaff, removendo],
+  );
 
   const handleBaixarPdf = async () => {
     if (!laudo) return;
@@ -264,6 +303,18 @@ export default function LaudoDetalhePage() {
           </Button>
         )}
       </Stack>
+
+      <ConfirmDialog
+        open={!!confirmarRemocao}
+        title="Remover análise"
+        message={`Deseja remover permanentemente a análise ${confirmarRemocao?.n_lab}? Esta ação não pode ser desfeita.`}
+        confirmLabel="Remover"
+        onClose={() => setConfirmarRemocao(null)}
+        onConfirm={async () => {
+          if (confirmarRemocao) await remover(confirmarRemocao.id);
+          setConfirmarRemocao(null);
+        }}
+      />
     </Box>
   );
 }
