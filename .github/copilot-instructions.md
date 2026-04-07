@@ -3,7 +3,7 @@
 > **Tech Lead:** Gabriel Azevedo | **Dev:** Sabrina  
 > **Stack:** React 19 + TypeScript + MUI v7 + React Hook Form + Zod + Axios  
 > **API:** Django REST Framework + JWT (SimpleJWT) — `http://localhost:8000/api/`  
-> **Última atualização:** 06/04/2026
+> **Última atualização:** 07/04/2026
 
 ---
 
@@ -18,8 +18,10 @@
 7. Padroes de codigo
 8. Testes automatizados
 9. Checklist unico de entrega
-10. Sprints e responsabilidades
-11. Diretrizes finais
+10. Fluxo de branches e Boas Praticas (Git)
+11. Sprints e responsabilidades
+12. **Arquitetura 1:N (Laudo → Análises)** ← REGRA CORE
+13. Diretrizes finais
 
 ---
 
@@ -141,8 +143,8 @@ Tema MUI ja esta implementado em [labas-web/src/theme/index.ts](labas-web/src/th
 - /dashboard (privada)
 - /laudos (privada)
 - /laudos/novo (staff)
-- /laudos/:nLab (privada)
-- /laudos/:nLab/editar (staff)
+- /laudos/:id (privada)
+- /laudos/:id/editar (staff)
 - /calibracao (staff)
 - /calibracao/nova (staff)
 - /entrada-lote (staff) — nome de tela: Operacao em Lote
@@ -217,7 +219,7 @@ Regras de ouro:
 
 ---
 
-## 10. Fluxo de branches e Boas Práticas (Git)
+## 10. Fluxo de Branches e Boas Práticas (Git)
 
 **A Regra de Ouro da Segurança:** NUNCA execute um comando de `merge` sem antes commitar o seu trabalho atual na sua branch. Commitar antes garante que o seu código fique salvo no histórico e não seja perdido caso dê algum conflito.
 
@@ -281,7 +283,7 @@ Em seguida, garanta que a palavra `node_modules/` está escrita dentro do seu ar
 
 ---
 
-## 11. Sprints e responsabilidades
+## 11. Sprints e Responsabilidades
 
 ### Gabriel — `feat/gabriel/foundation`
 
@@ -303,10 +305,31 @@ Em seguida, garanta que a palavra `node_modules/` está escrita dentro do seu ar
   - `src/types/cliente.ts` + `src/services/clienteService.ts`
   - `src/schemas/clienteSchemas.ts` + `src/hooks/useClientes.ts` + `src/hooks/useClienteForm.ts`
   - `src/pages/clientes/ClientesPage.tsx` + `src/pages/clientes/ClienteFormPage.tsx`
-- 🔲 Sprint 6: Pagina de laudos — lista completa + editar + excluir (staff) — branch `feat/gabriel/laudos-page`
-  - **Bloco 1 — Hook:** `src/hooks/useLaudos.ts` — refatorar para suportar listagem completa (staff ve todos, cliente ve os seus), paginacao, delete com confirmacao
-  - **Bloco 2 — UI:** `src/pages/laudos/LaudosPage.tsx` — tabela MUI DataGrid com acoes (ver PDF, editar, excluir); botao "Novo Laudo" para staff; filtro por n_lab/cliente
-  - **Bloco 3 — Edicao:** `src/pages/laudos/LaudoEditPage.tsx` — rota `/laudos/:nLab/editar` (staff only); reusa `LaudoFormPage` com dados pre-carregados via `laudoService.buscar()`
+- ✅ Sprint 6: Página de laudos — lista completa + editar + excluir (staff) — branch `feat/gabriel/laudos-page`
+  - `src/hooks/useLaudos.ts` — refatorado: `Laudo[]`, `id: number`, `baixarPdf(id, codigoLaudo)`, `excluir(id)`, filtro por `codigo_laudo`/cliente
+  - `src/pages/laudos/LaudosPage.tsx` — tabela MUI com colunas: Código, Cliente, Data Emissão; ações: ver detalhe, PDF, editar, excluir (staff); campo de busca; `ConfirmDialog`
+  - `src/pages/laudos/LaudoFormPage.tsx` — formulário de criação cabeçalho only: Cliente (Autocomplete), `data_emissao`, `observacoes`
+  - `src/pages/laudos/LaudoEditPage.tsx` — rota `/laudos/:id/editar` (staff); form do cabeçalho + DataGrid de análises (toggle ativo, remover); `useParams<{ id: string }>()`
+- ✅ **Sprint 7 — Refatoração 1:N (Laudo → N Análises)** — branch `feat/gabriel/laudo-multi-analise`
+  - **Bloco 0 — Backend:** migração Django — `AnaliseSolo` recebe ForeignKey `laudo` (NOT NULL, cascade); serializers aninhados; endpoints `/laudos/:id/analises/`; PDF WeasyPrint itera `laudo.analises.filter(ativo=True)`
+  - **Bloco 1 — Tipos e Services:** `src/types/analise.ts` (`Laudo` + `AnaliseSolo` com `laudo_id`); `src/services/analiseService.ts` (listar, criar, atualizar, remover, toggleAtivo); `src/services/laudoService.ts` com `id: number`
+  - **Bloco 2 — Hooks e Schemas:** `src/schemas/analiseSchemas.ts`; `src/hooks/useAnalises.ts` (por `laudoId`); `src/hooks/useLaudoForm.ts` e `useLaudoEditForm.ts` atualizados para `Laudo`
+  - **Bloco 3 — UI:** `src/pages/laudos/LaudoDetalhePage.tsx` (rota `/laudos/:id`, read-only: cabeçalho + DataGrid + botão PDF); `src/App.tsx` (rotas com `:id`, lazy import `LaudoDetalhePage`)
+- ✅ **Sprint 8 — Roteiro de Execução + Correção de Análises** — branch `feat/gabriel/laudo-multi-analise`
+  - **`Laudo.data_saida`:** novo campo nullable `DateField` (migration `0019`); `data_emissao` relabelado para "Data de Entrada" na UI; `data_saida` ("Data de Saída") exposto em `LaudoEditPage`
+  - **Fluxo de criação:** após `POST /laudos/`, frontend redireciona para `/laudos/:id/editar` (hook `useLaudoForm`)
+  - **Sidebar:** item "Amostras" com `BiotechIcon` → `/entrada-lote`; botão "Ir para Amostras" no header de `LaudoEditPage`
+  - **`useAnalises`:** adicionados `editando: number | null` e `editar(analiseId, payload)` → `PATCH /laudos/:id/analises/:id/`; `pagination_class = None` em `AnaliseSoloListCreateView` (fix spread error)
+  - **Dialog Editar Ficha** (inline em `LaudoEditPage`): corrige `n_lab`, `referencia`, `data_entrada` via ícone `EditIcon`
+  - **`DialogCorrecaoAnalise`** — `src/components/shared/DialogCorrecaoAnalise.tsx`:
+    - Aba **Correção de Bancada**: lista leituras brutas por elemento; inputs de `leitura_bruta` + `fator_diluicao` (AA/FC/ES); PATCH em `/leituras/:id/` → signal re-dispara → recalcula SB/CTC/V%/m%; aviso informativo sobre recálculo automático
+    - Aba **Granulometria**: inputs areia, argila, silte com validação soma ≤ 100%; PATCH direto em `AnaliseSolo`
+    - Acionado pelo ícone `ScienceIcon` (cor `secondary`) na coluna de ações do DataGrid de amostras
+  - **Backend — novos endpoints:**
+    - `GET /api/analises/:id/leituras/` → `LeiturasPorAnaliseListView` (sem paginação)
+    - `GET|PATCH /api/leituras/:id/` → `LeituraEquipamentoDetailView`
+    - `LeituraEquipamentoDetalheSerializer`: expõe `elemento`, `elemento_display`, `equipamento`, `resultado_calculado`
+  - **Novos arquivos frontend:** `src/types/analise.ts` (`LeituraDetalhe`, `LeituraCorrecaoPayload`); `src/services/correcaoService.ts`; `src/hooks/useCorrecaoAnalise.ts`; `src/services/analiseService.ts` + método `buscar(laudoId, analiseId)`
 
 ### Sabrina — `feat/sabrina/laudos`
 
@@ -320,7 +343,57 @@ Zonas sem conflito:
 
 ---
 
-## 12. Diretrizes finais
+## 12. Arquitetura 1:N (Laudo → Análises)
+
+> **REGRA CORE — não violar.** Qualquer feature nova deve respeitar este contrato.
+
+### Princípio Fundamental
+
+**Laudo é o pai. AnaliseSolo é o filho. O PDF deve iterar sobre a coleção de análises.**
+
+### Contratos de Entidade
+
+| Entidade      | Papel                                             | Cardinalidade     |
+| ------------- | ------------------------------------------------- | ----------------- |
+| `Laudo`       | Cabeçalho do serviço — Cliente, Data, Observações | 1 (pai)           |
+| `AnaliseSolo` | Amostra individual com N_Lab único                | N (filho, max 50) |
+
+### Regras de Negócio
+
+- **ForeignKey obrigatória:** `AnaliseSolo.laudo` é NOT NULL. Proibido criar `AnaliseSolo` sem `Laudo` pai.
+- **Integridade referencial:** Ao deletar um `Laudo`, suas `AnaliseSolo` são removidas em cascata (`on_delete=CASCADE`).
+- **N_Lab único por laudo:** `unique_together = ['laudo', 'n_lab']` — a unicidade de `n_lab` é validada no escopo do laudo pai, não globalmente.
+- **codigo_laudo:** padrão `L-AAAA/N` (ex: `L-2026/1`), gerado automaticamente pelo backend via auto-increment por ano. O campo é read-only após criação.
+- **Campo `ativo` em AnaliseSolo:** `ativo = BooleanField(default=True)`. Análises com `ativo=False` são excluídas do PDF e do DataGrid de detalhe do laudo. Somente staff pode alternar o flag.
+- **PDF paginado:** O motor WeasyPrint itera `laudo.analises.filter(ativo=True)`. Limite de 50 análises ativas por laudo, com quebra de página a cada 5 (ou conforme layout do template).
+- **Campos calculados (SB, CTC, V%, m%):** Somente leitura na UI — nunca expor input para esses campos.
+- **Estratégia de migration:** Os registros legados de `AnaliseSolo` (sem laudo) recebem um `Laudo` stub gerado por cliente durante a migration — um laudo stub por cliente, agrupando todas as suas análises existentes.
+
+### Contrato de API
+
+```
+GET    /laudos/                        # lista de laudos (cabeçalhos)
+POST   /laudos/                        # cria laudo
+GET    /laudos/:id/                    # detalhe do laudo
+PUT    /laudos/:id/                    # edita laudo
+DELETE /laudos/:id/                    # remove laudo + análises (cascade)
+GET    /laudos/:id/analises/           # lista análises do laudo
+POST   /laudos/:id/analises/           # adiciona análise ao laudo
+GET    /laudos/:id/analises/:nLab/     # detalhe de uma análise
+PUT    /laudos/:id/analises/:nLab/     # edita análise
+DELETE /laudos/:id/analises/:nLab/     # remove análise
+GET    /laudos/:id/pdf/                # PDF com todas as análises paginadas
+```
+
+### Regras de UI
+
+- A tela de detalhe do laudo (`LaudoDetalhePage`) exibe o cabeçalho + DataGrid de análises.
+- O DataGrid de análises **não possui campos de digitação de leitura bruta** — isso acontece na Operação em Lote (`/entrada-lote`).
+- Botão "Gerar PDF" chama `/laudos/:id/pdf/` e faz download do documento único com todas as análises.
+
+---
+
+## 13. Diretrizes finais
 
 - Entregas complexas devem ser divididas em blocos:
   1. Tipos e services

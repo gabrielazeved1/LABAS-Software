@@ -1,6 +1,7 @@
 from django.contrib import admin
 from .models import (
     Cliente,
+    Laudo,
     AnaliseSolo,
     BateriaCalibracao,
     LeituraEquipamento,
@@ -14,12 +15,15 @@ from .models import (
 
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
-    """
-    Interface de administracao para a entidade Cliente.
-    """
-
     list_display = ("codigo", "nome", "municipio", "contato")
     search_fields = ("nome", "codigo")
+
+
+@admin.register(Laudo)
+class LaudoAdmin(admin.ModelAdmin):
+    list_display = ("codigo_laudo", "cliente", "data_emissao")
+    search_fields = ("codigo_laudo", "cliente__nome", "cliente__codigo")
+    readonly_fields = ("codigo_laudo",)
 
 
 class LeituraEquipamentoLaudoInline(admin.TabularInline):
@@ -35,20 +39,20 @@ class LeituraEquipamentoLaudoInline(admin.TabularInline):
 
 @admin.register(AnaliseSolo)
 class AnaliseSoloAdmin(admin.ModelAdmin):
-    """
-    Painel central do sistema: O Laudo de Analise de Solo.
-    Organiza os inumeros atributos quimicos e fisicos em blocos logicos expansivos,
-    espelhando as planilhas oficiais do laboratorio.
-    """
-
-    list_display = ("n_lab", "cliente", "data_entrada", "ph_agua", "p_m")
-    search_fields = ("n_lab", "cliente__nome")
+    list_display = ("n_lab", "laudo", "ativo", "data_entrada", "ph_agua", "p_m")
+    search_fields = ("n_lab", "laudo__cliente__nome", "laudo__codigo_laudo")
+    list_filter = ("ativo",)
     inlines = [LeituraEquipamentoLaudoInline]
 
     fieldsets = (
         (
             "1. Identificacao e Controle",
-            {"fields": (("n_lab", "cliente"), ("data_entrada", "data_saida"))},
+            {
+                "fields": (
+                    ("n_lab", "laudo", "ativo", "referencia"),
+                    ("data_entrada", "data_saida"),
+                )
+            },
         ),
         ("2. Phagametro (Acidez)", {"fields": (("ph_agua", "ph_cacl2", "ph_kcl"),)}),
         (

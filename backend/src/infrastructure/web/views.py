@@ -18,18 +18,21 @@ from src.infrastructure.database.models import (
     AnaliseSolo,
     BateriaCalibracao,
     Cliente,
+    Laudo,
     LeituraEquipamento,
     PontoCalibracao,
 )
 from .serializers import (
     AnaliseSoloSerializer,
     ClienteCadastroSerializer,
+    LaudoSerializer,
     UserRegistrationSerializer,
     BateriaCalibracaoSerializer,
     BateriaCalibracaoAtivoSerializer,
     PontoCalibracaoSerializer,
     AmostraPendenteSerializer,
     LeituraEquipamentoSerializer,
+    LeituraEquipamentoDetalheSerializer,
 )
 from .permissions import IsOwnerOrTechnician
 
@@ -81,53 +84,101 @@ class MeView(APIView):
 
 
 # =============================================================================
-# 2 GESTAO DE LAUDOS PROTEGIDO
+# 2 GESTAO DE LAUDOS — arquitetura 1:N (Laudo -> N AnaliseSolo)
 # =============================================================================
 
 
-# Controlador para colecoes de laudos com regras de visibilidade
-class MeusLaudosAPIView(generics.ListCreateAPIView):
+class LaudoListCreateView(generics.ListCreateAPIView):
     """
-    Gerencia a listagem e submissao de analises
-    Aplica filtros de seguranca baseados no tipo de conta
+    GET  /api/laudos/   -> staff: todos os laudos | cliente: apenas os seus
+    POST /api/laudos/   -> cria laudo (staff only — validado em IsOwnerOrTechnician)
     """
 
-    serializer_class = AnaliseSoloSerializer
+    serializer_class = LaudoSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrTechnician]
 
     def get_queryset(self):
-        # Implementa o isolamento de dados entre clientes e equipe tecnica
         user = self.request.user
         if user.is_anonymous:
-            return AnaliseSolo.objects.none()
-
-        # Tecnicos visualizam o historico completo do laboratorio
+            return Laudo.objects.none()
         if user.is_staff:
-            return AnaliseSolo.objects.all().order_by("-data_entrada")
-
-        # Clientes restritos aos laudos vinculados ao seu proprio perfil
-        return AnaliseSolo.objects.filter(cliente__usuario=user).order_by(
-            "-data_entrada"
+            return Laudo.objects.select_related("cliente").order_by("-data_emissao")
+        return (
+            Laudo.objects.select_related("cliente")
+            .filter(cliente__usuario=user)
+            .order_by("-data_emissao")
         )
 
 
-# Controlador para manipulacao de um registro individual
-class LaudoDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+class LaudoDetailView(generics.RetrieveUpdateDestroyAPIView):
     """
-    Interface para consulta detalhada edicao e exclusao
-    Utiliza o identificador textual n_lab para facilitar a busca
+    GET    /api/laudos/<pk>/  -> detalhe do laudo
+    PUT    /api/laudos/<pk>/  -> edita cabeçalho (staff only)
+    DELETE /api/laudos/<pk>/  -> remove laudo + analises em cascade (staff only)
+    """
+
+    serializer_class = LaudoSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrTechnician]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Laudo.objects.select_related("cliente").all()
+        return Laudo.objects.select_related("cliente").filter(cliente__usuario=user)
+
+
+class AnaliseSoloListCreateView(generics.ListCreateAPIView):
+    """
+    GET  /api/laudos/<laudo_pk>/analises/  -> lista analises ativas do laudo
+    POST /api/laudos/<laudo_pk>/analises/  -> adiciona analise ao laudo (staff only)
     """
 
     serializer_class = AnaliseSoloSerializer
     permission_classes = [IsAuthenticated, IsOwnerOrTechnician]
-    lookup_field = "n_lab"
+    pagination_class = None  # análises são sempre do escopo de um laudo (máx. 50)
+
+    def _get_laudo(self):
+        laudo = get_object_or_404(Laudo, pk=self.kwargs["laudo_pk"])
+        self.check_object_permissions(self.request, laudo)
+        return laudo
 
     def get_queryset(self):
-        # Garante que a busca individual respeite as travas de seguranca
-        user = self.request.user
-        if user.is_staff:
-            return AnaliseSolo.objects.all()
-        return AnaliseSolo.objects.filter(cliente__usuario=user)
+        laudo = self._get_laudo()
+        return AnaliseSolo.objects.filter(laudo=laudo, ativo=True).order_by("n_lab")
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["laudo"] = self._get_laudo()
+        return ctx
+
+    def perform_create(self, serializer):
+        laudo = self._get_laudo()
+        serializer.save(laudo=laudo)
+
+
+class AnaliseSoloDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET    /api/laudos/<laudo_pk>/analises/<pk>/  -> detalhe da analise
+    PUT    /api/laudos/<laudo_pk>/analises/<pk>/  -> edita analise (staff only)
+    DELETE /api/laudos/<laudo_pk>/analises/<pk>/  -> remove analise (staff only)
+    """
+
+    serializer_class = AnaliseSoloSerializer
+    permission_classes = [IsAuthenticated, IsOwnerOrTechnician]
+
+    def _get_laudo(self):
+        laudo = get_object_or_404(Laudo, pk=self.kwargs["laudo_pk"])
+        self.check_object_permissions(self.request, laudo)
+        return laudo
+
+    def get_queryset(self):
+        laudo = self._get_laudo()
+        return AnaliseSolo.objects.filter(laudo=laudo)
+
+    def get_serializer_context(self):
+        ctx = super().get_serializer_context()
+        ctx["laudo"] = self._get_laudo()
+        return ctx
 
 
 # =============================================================================
@@ -135,48 +186,36 @@ class LaudoDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
 # =============================================================================
 
 
-# Ponto de extremidade para extracao de relatorio oficial formatado
 @api_view(["GET"])
 @authentication_classes([SessionAuthentication, JWTAuthentication])
 @permission_classes([IsAuthenticated])
-def gerar_laudo_pdf(request, n_lab):
-    # Trata o identificador recebido
-    n_lab_limpo = n_lab.strip("/")
-    laudo_foco = get_object_or_404(AnaliseSolo, n_lab=n_lab_limpo)
+def gerar_laudo_pdf(request, pk):
+    laudo = get_object_or_404(Laudo.objects.select_related("cliente__usuario"), pk=pk)
 
-    # Validacao de seguranca para acesso ao laudo
-    if not (request.user.is_staff or laudo_foco.cliente.usuario == request.user):
+    if not (request.user.is_staff or laudo.cliente.usuario == request.user):
         return Response(
-            {"detail": "Acesso negado Este laudo nao pertence a voce"},
+            {"detail": "Acesso negado. Este laudo nao pertence a voce."},
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    # Coleta as analises do banco de dados limitado a cinco registros
-    analises_reais = list(
-        AnaliseSolo.objects.filter(cliente=laudo_foco.cliente).order_by(
-            "-data_entrada"
-        )[:5]
-    )
-
-    # Injeta valores nulos para completar a lista de cinco posicoes para o layout
-    # Isso permite que o html identifique onde deve riscar a linha
-    analises_preparadas = analises_reais + [None] * (5 - len(analises_reais))
+    # Filtra apenas analises ativas, limit 50, divide em paginas de 5
+    analises_ativas = list(laudo.analises.filter(ativo=True).order_by("n_lab")[:50])
+    paginas = [
+        analises_ativas[i : i + 5] for i in range(0, max(len(analises_ativas), 1), 5)
+    ]
 
     context = {
-        "cliente": laudo_foco.cliente,
-        "analises": analises_preparadas,
-        "laudo_foco": laudo_foco,
+        "laudo": laudo,
+        "cliente": laudo.cliente,
+        "paginas": paginas,
     }
 
-    # Processamento do documento via motor WeasyPrint
     html_string = render_to_string("laudos/modelo_oficial.html", context)
     pdf = HTML(string=html_string, base_url=request.build_absolute_uri("/")).write_pdf()
 
-    # Configuracao do cabecalho de resposta do arquivo binario
+    nome_arquivo = f"laudo_{laudo.codigo_laudo.replace('/', '-')}.pdf"
     response = HttpResponse(pdf, content_type="application/pdf")
-    nome_arquivo = f"relatorio_{laudo_foco.n_lab.replace('/', '-')}.pdf"
     response["Content-Disposition"] = f'inline; filename="{nome_arquivo}"'
-
     return response
 
 
@@ -322,7 +361,7 @@ class AmostrasPendentesListView(generics.ListAPIView):
         ).values_list("analise_id", flat=True)
 
         return (
-            AnaliseSolo.objects.select_related("cliente")
+            AnaliseSolo.objects.select_related("laudo__cliente")
             .exclude(id__in=ids_com_leitura)
             .order_by("n_lab")
         )
@@ -372,6 +411,79 @@ class LeituraEquipamentoCreateView(generics.CreateAPIView):
 
         headers = self.get_success_headers(serializer.data)
         return Response(data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class LeiturasPorAnaliseListView(generics.ListAPIView):
+    """
+    GET /api/analises/<analise_id>/leituras/
+    Lista todas as leituras brutas registradas para uma analise,
+    com o resultado calculado atual (lido diretamente da AnaliseSolo).
+    Usado pelo DialogCorrecaoAnalise para popular a aba de bancada.
+    """
+
+    serializer_class = LeituraEquipamentoDetalheSerializer
+    pagination_class = None
+
+    def get_permissions(self):
+        from rest_framework.permissions import IsAdminUser
+
+        return [IsAuthenticated(), IsAdminUser()]
+
+    def get_queryset(self):
+        analise = get_object_or_404(AnaliseSolo, pk=self.kwargs["analise_id"])
+        return (
+            LeituraEquipamento.objects.filter(analise=analise)
+            .select_related("bateria", "analise")
+            .order_by("bateria__elemento")
+        )
+
+
+class LeituraEquipamentoDetailView(generics.RetrieveUpdateAPIView):
+    """
+    GET   /api/leituras/<pk>/  -> detalhe da leitura (com resultado calculado)
+    PATCH /api/leituras/<pk>/  -> corrige leitura_bruta e/ou fator_diluicao.
+                                  O signal post_save re-dispara e recalcula
+                                  o campo correspondente na AnaliseSolo.
+    """
+
+    queryset = LeituraEquipamento.objects.select_related("bateria", "analise").all()
+    http_method_names = ["get", "patch"]
+
+    def get_permissions(self):
+        from rest_framework.permissions import IsAdminUser
+
+        return [IsAuthenticated(), IsAdminUser()]
+
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return LeituraEquipamentoDetalheSerializer
+        return LeituraEquipamentoSerializer
+
+    def update(self, request, *args, **kwargs):
+        kwargs["partial"] = True  # sempre PATCH
+        instance = self.get_object()
+
+        serializer = LeituraEquipamentoSerializer(
+            instance, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        leitura = serializer.save()  # signal re-dispara aqui
+
+        leitura.analise.refresh_from_db()
+        campo_elemento = leitura.bateria.elemento.lower()
+        valor_calculado = getattr(leitura.analise, campo_elemento, None)
+
+        resposta = LeituraEquipamentoDetalheSerializer(
+            leitura, context=self.get_serializer_context()
+        ).data
+        return Response(
+            {
+                **resposta,
+                "resultado_calculado": (
+                    float(valor_calculado) if valor_calculado is not None else None
+                ),
+            }
+        )
 
 
 # =============================================================================

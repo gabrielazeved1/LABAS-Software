@@ -1,77 +1,40 @@
 import { api } from "./api";
-import type {
-  AnaliseSolo,
-  AnaliseSoloPayload,
-  PaginatedResponse,
-} from "../types/analise";
+import type { Laudo, LaudoPayload, PaginatedResponse } from "../types/analise";
 
-const BASE = "/meus-laudos/";
-
-const normalizarNLab = (nLab: string) => nLab.replace(/^\/+|\/+$/g, "");
+const BASE = "/laudos/";
 
 export const laudoService = {
-  /** Lista laudos com paginação padrão do DRF. */
-  async listar(page?: number): Promise<PaginatedResponse<AnaliseSolo>> {
+  async listar(page?: number): Promise<PaginatedResponse<Laudo>> {
     const { data } = await api.get(BASE, {
       params: page ? { page } : undefined,
     });
     if (Array.isArray(data)) {
       return { count: data.length, next: null, previous: null, results: data };
     }
-    return data as PaginatedResponse<AnaliseSolo>;
+    return data as PaginatedResponse<Laudo>;
   },
 
-  /** Lista os laudos do cliente logado (rota /meus-laudos/). */
-  async listarMeusLaudos(): Promise<PaginatedResponse<AnaliseSolo>> {
-    const { data } = await api.get(BASE);
-    if (Array.isArray(data)) {
-      return { count: data.length, next: null, previous: null, results: data };
-    }
-    return data as PaginatedResponse<AnaliseSolo>;
-  },
-
-  /** Cria um novo laudo (somente staff). */
-  async criar(payload: AnaliseSoloPayload): Promise<AnaliseSolo> {
-    const { data } = await api.post<AnaliseSolo>(BASE, payload);
+  async buscar(id: number): Promise<Laudo> {
+    const { data } = await api.get<Laudo>(`${BASE}${id}/`);
     return data;
   },
 
-  /** Busca detalhe de um laudo pelo N Lab. */
-  async buscar(nLab: string): Promise<AnaliseSolo> {
-    const { data } = await api.get<AnaliseSolo>(
-      `${BASE}${normalizarNLab(nLab)}/`,
-    );
+  async criar(payload: LaudoPayload): Promise<Laudo> {
+    const { data } = await api.post<Laudo>(BASE, payload);
     return data;
   },
 
-  /** Atualiza parcialmente um laudo (somente staff). */
-  async atualizar(
-    nLab: string,
-    payload: Partial<AnaliseSoloPayload>,
-  ): Promise<AnaliseSolo> {
-    const { data } = await api.patch<AnaliseSolo>(
-      `${BASE}${normalizarNLab(nLab)}/`,
-      payload,
-    );
+  async atualizar(id: number, payload: Partial<LaudoPayload>): Promise<Laudo> {
+    const { data } = await api.patch<Laudo>(`${BASE}${id}/`, payload);
     return data;
   },
 
-  /** Remove um laudo (somente staff). */
-  async remover(nLab: string): Promise<void> {
-    await api.delete(`${BASE}${normalizarNLab(nLab)}/`);
+  async remover(id: number): Promise<void> {
+    await api.delete(`${BASE}${id}/`);
   },
 
-  /** Gera o PDF oficial do laudo. */
-  async baixarPdf(nLab: string): Promise<Blob> {
-    const { data } = await api.get(`${BASE}${normalizarNLab(nLab)}/pdf/`, {
-      responseType: "blob",
-    });
-    return data as Blob;
-  },
-
-  /** Baixa o PDF do laudo do cliente logado. */
-  async baixarPdfLaudo(nLab: string): Promise<Blob> {
-    const { data } = await api.get(`${BASE}${normalizarNLab(nLab)}/pdf/`, {
+  async baixarPdf(id: number): Promise<Blob> {
+    const { data } = await api.get(`${BASE}${id}/pdf/`, {
       responseType: "blob",
     });
     return data as Blob;

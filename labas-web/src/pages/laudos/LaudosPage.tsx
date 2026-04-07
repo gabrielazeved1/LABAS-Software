@@ -21,6 +21,7 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import SearchIcon from "@mui/icons-material/Search";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -34,18 +35,20 @@ export default function LaudosPage() {
   const { laudos, loading, deletando, baixarPdf, excluir } = useLaudos();
 
   const [filtro, setFiltro] = useState("");
-  const [confirmarExclusao, setConfirmarExclusao] = useState<string | null>(
+  const [confirmarExclusao, setConfirmarExclusao] = useState<number | null>(
     null,
   );
 
   const laudosFiltrados = laudos.filter((l) => {
     const termo = filtro.toLowerCase();
     return (
-      l.n_lab.toLowerCase().includes(termo) ||
+      l.codigo_laudo.toLowerCase().includes(termo) ||
       l.cliente.nome.toLowerCase().includes(termo) ||
       l.cliente.codigo.toLowerCase().includes(termo)
     );
   });
+
+  const laudoParaExcluir = laudos.find((l) => l.id === confirmarExclusao);
 
   if (loading) {
     return (
@@ -76,16 +79,18 @@ export default function LaudosPage() {
       >
         <TextField
           size="small"
-          placeholder="Filtrar por N° Lab ou cliente..."
+          placeholder="Filtrar por código ou cliente..."
           value={filtro}
           onChange={(e) => setFiltro(e.target.value)}
           sx={{ minWidth: 280 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon fontSize="small" />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            },
           }}
         />
 
@@ -111,19 +116,18 @@ export default function LaudosPage() {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>N° Lab</TableCell>
+                <TableCell>Código</TableCell>
                 <TableCell>Cliente</TableCell>
-                <TableCell>Data Entrada</TableCell>
-                <TableCell>Data Saída</TableCell>
+                <TableCell>Data Emissão</TableCell>
                 <TableCell align="right">Ações</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {laudosFiltrados.map((laudo) => (
-                <TableRow key={laudo.n_lab} hover>
+                <TableRow key={laudo.id} hover>
                   <TableCell>
                     <Typography variant="body2" fontWeight={600}>
-                      {laudo.n_lab}
+                      {laudo.codigo_laudo}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -134,14 +138,24 @@ export default function LaudosPage() {
                       {laudo.cliente.codigo}
                     </Typography>
                   </TableCell>
-                  <TableCell>{laudo.data_entrada}</TableCell>
-                  <TableCell>{laudo.data_saida ?? "—"}</TableCell>
+                  <TableCell>{laudo.data_emissao}</TableCell>
                   <TableCell align="right" sx={{ whiteSpace: "nowrap" }}>
+                    <Tooltip title="Ver detalhe">
+                      <IconButton
+                        size="small"
+                        onClick={() => navigate(`/laudos/${laudo.id}`)}
+                      >
+                        <VisibilityIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+
                     <Tooltip title="Baixar PDF">
                       <IconButton
                         size="small"
                         color="primary"
-                        onClick={() => baixarPdf(laudo.n_lab)}
+                        onClick={() =>
+                          void baixarPdf(laudo.id, laudo.codigo_laudo)
+                        }
                       >
                         <PictureAsPdfIcon fontSize="small" />
                       </IconButton>
@@ -153,9 +167,7 @@ export default function LaudosPage() {
                           <IconButton
                             size="small"
                             onClick={() =>
-                              navigate(
-                                `/laudos/${encodeURIComponent(laudo.n_lab)}/editar`,
-                              )
+                              navigate(`/laudos/${laudo.id}/editar`)
                             }
                           >
                             <EditIcon fontSize="small" />
@@ -166,8 +178,8 @@ export default function LaudosPage() {
                           <IconButton
                             size="small"
                             color="error"
-                            disabled={deletando === laudo.n_lab}
-                            onClick={() => setConfirmarExclusao(laudo.n_lab)}
+                            disabled={deletando === laudo.id}
+                            onClick={() => setConfirmarExclusao(laudo.id)}
                           >
                             <DeleteIcon fontSize="small" />
                           </IconButton>
@@ -185,11 +197,11 @@ export default function LaudosPage() {
       <ConfirmDialog
         open={confirmarExclusao !== null}
         title="Excluir laudo"
-        message={`Deseja excluir permanentemente o laudo ${confirmarExclusao}? Esta ação não pode ser desfeita.`}
+        message={`Deseja excluir permanentemente o laudo ${laudoParaExcluir?.codigo_laudo ?? ""}? Esta ação não pode ser desfeita.`}
         confirmLabel="Excluir"
         loading={deletando !== null}
         onConfirm={async () => {
-          if (confirmarExclusao) {
+          if (confirmarExclusao !== null) {
             await excluir(confirmarExclusao);
             setConfirmarExclusao(null);
           }
