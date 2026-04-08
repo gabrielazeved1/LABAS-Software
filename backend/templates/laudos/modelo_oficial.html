@@ -57,7 +57,7 @@
 
       <tr>
         <td class="label-cell">Contato:</td>
-        <td>{{ cliente.usuario.email }}</td>
+        <td>{{ cliente.email|default:"-" }}</td>
 
         <td class="label-cell">Área:</td>
         <td colspan="3">

@@ -2,7 +2,8 @@
 export interface Cliente {
   codigo: string;
   nome: string;
-  contato: string | null;
+  email: string | null; // Separado para a automação de envio de Laudos
+  telefone: string | null; // Separado para o link do WhatsApp
   municipio: string | null;
   area: string | null;
   observacoes: string | null;
@@ -12,7 +13,8 @@ export interface Cliente {
 export type ClientePayload = {
   codigo: string;
   nome: string;
-  contato?: string;
+  email?: string;
+  telefone?: string;
   municipio?: string;
   area?: string;
   observacoes?: string;

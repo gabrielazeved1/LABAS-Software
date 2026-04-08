@@ -78,7 +78,7 @@ class ClienteSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cliente
-        fields = ["codigo", "nome", "municipio", "area"]
+        fields = ["codigo", "nome", "municipio", "area", "telefone", "email"]
 
 
 class LaudoSerializer(serializers.ModelSerializer):
@@ -138,7 +138,15 @@ class ClienteCadastroSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Cliente
-        fields = ["codigo", "nome", "contato", "municipio", "area", "observacoes"]
+        fields = [
+            "codigo",
+            "nome",
+            "telefone",
+            "email",
+            "municipio",
+            "area",
+            "observacoes",
+        ]
 
     def validate_codigo(self, value):
         # Na atualizacao (instance ja existe), ignora a validacao de unicidade

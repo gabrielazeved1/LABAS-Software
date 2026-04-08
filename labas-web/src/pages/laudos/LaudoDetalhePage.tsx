@@ -13,6 +13,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import { BotoesComunicacao } from "../../components/shared/BotoesComunicacao";
 import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -202,6 +203,11 @@ export default function LaudoDetalhePage() {
         title={`Laudo ${laudo.codigo_laudo}`}
         subtitle={`${laudo.cliente.nome} (${laudo.cliente.codigo})`}
       />
+      <BotoesComunicacao
+        laudoId={laudo.id}
+        clienteNome={laudo.cliente.nome}
+        clienteTelefone={laudo.cliente.telefone ?? undefined}
+      />
 
       {/* ── Cabeçalho ──────────────────────────────────────────────────────── */}
       <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
@@ -309,7 +315,7 @@ export default function LaudoDetalhePage() {
         title="Remover análise"
         message={`Deseja remover permanentemente a análise ${confirmarRemocao?.n_lab}? Esta ação não pode ser desfeita.`}
         confirmLabel="Remover"
-        onClose={() => setConfirmarRemocao(null)}
+        onCancel={() => setConfirmarRemocao(null)}
         onConfirm={async () => {
           if (confirmarRemocao) await remover(confirmarRemocao.id);
           setConfirmarRemocao(null);

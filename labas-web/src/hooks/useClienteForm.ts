@@ -29,7 +29,8 @@ export function useClienteForm({
     defaultValues: {
       codigo: clienteInicial?.codigo ?? "",
       nome: clienteInicial?.nome ?? "",
-      contato: clienteInicial?.contato ?? "",
+      telefone: clienteInicial?.telefone ?? "",
+      email: clienteInicial?.email ?? "",
       municipio: clienteInicial?.municipio ?? "",
       area: clienteInicial?.area ?? "",
       observacoes: clienteInicial?.observacoes ?? "",
@@ -42,7 +43,8 @@ export function useClienteForm({
     form.reset({
       codigo: clienteInicial.codigo,
       nome: clienteInicial.nome,
-      contato: clienteInicial.contato ?? "",
+      telefone: clienteInicial.telefone ?? "",
+      email: clienteInicial.email ?? "",
       municipio: clienteInicial.municipio ?? "",
       area: clienteInicial.area ?? "",
       observacoes: clienteInicial.observacoes ?? "",

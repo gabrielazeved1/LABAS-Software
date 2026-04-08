@@ -73,6 +73,7 @@ export default function ClienteFormPage() {
               <TextField
                 {...field}
                 label="Código"
+                placeholder="Ex: CLI-001"
                 error={!!errors.codigo}
                 helperText={errors.codigo?.message}
                 disabled={edicao}
@@ -118,14 +119,28 @@ export default function ClienteFormPage() {
             )}
           />
           <Controller
-            name="contato"
+            name="telefone"
             control={control}
             render={({ field }) => (
               <TextField
                 {...field}
-                label="Contato"
-                error={!!errors.contato}
-                helperText={errors.contato?.message}
+                label="Telefone"
+                placeholder="(34) 99999-9999"
+                error={!!errors.telefone}
+                helperText={errors.telefone?.message}
+              />
+            )}
+          />
+          <Controller
+            name="email"
+            control={control}
+            render={({ field }) => (
+              <TextField
+                {...field}
+                label="E-mail"
+                type="email"
+                error={!!errors.email}
+                helperText={errors.email?.message}
               />
             )}
           />

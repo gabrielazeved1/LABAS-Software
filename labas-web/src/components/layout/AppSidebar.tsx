@@ -89,7 +89,7 @@ export default function AppSidebar({ width }: Props) {
           LABAS
         </Typography>
         <Typography variant="caption" color="text.secondary">
-          Análise de Solos e Sementes
+          Análise de Solos
         </Typography>
       </Box>
 

@@ -223,9 +223,9 @@ export default function LaudoEditPage() {
               onClick={() => void toggleAtivo(row.id, !row.ativo)}
             >
               {row.ativo ? (
-                <VisibilityOffIcon fontSize="small" />
-              ) : (
                 <VisibilityIcon fontSize="small" />
+              ) : (
+                <VisibilityOffIcon fontSize="small" />
               )}
             </IconButton>
           </Tooltip>
