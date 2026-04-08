@@ -33,6 +33,10 @@ export const laudoService = {
     await api.delete(`${BASE}${id}/`);
   },
 
+  enviarPorEmail: async (id: number): Promise<void> => {
+    await api.post(`/laudos/${id}/enviar-email/`);
+  },
+
   async baixarPdf(id: number): Promise<Blob> {
     const { data } = await api.get(`${BASE}${id}/pdf/`, {
       responseType: "blob",

@@ -100,7 +100,8 @@ export default function ClientesPage() {
                 <TableCell>Nome</TableCell>
                 <TableCell>Município</TableCell>
                 <TableCell>Área</TableCell>
-                <TableCell>Contato</TableCell>
+                <TableCell>Telefone</TableCell>
+                <TableCell>E-mail</TableCell>
                 <TableCell align="right">Ações</TableCell>
               </TableRow>
             </TableHead>
@@ -111,7 +112,8 @@ export default function ClientesPage() {
                   <TableCell>{c.nome}</TableCell>
                   <TableCell>{c.municipio ?? "—"}</TableCell>
                   <TableCell>{c.area ?? "—"}</TableCell>
-                  <TableCell>{c.contato ?? "—"}</TableCell>
+                  <TableCell>{c.telefone ?? "—"}</TableCell>
+                  <TableCell>{c.email ?? "—"}</TableCell>
                   <TableCell align="right">
                     <Tooltip title="Editar">
                       <IconButton

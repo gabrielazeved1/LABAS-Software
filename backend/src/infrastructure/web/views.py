@@ -1,6 +1,8 @@
+from io import BytesIO
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.http import HttpResponse
+
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -12,6 +14,7 @@ from rest_framework.decorators import (
 )
 from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
+
 from weasyprint import HTML
 
 from src.infrastructure.database.models import (
@@ -34,7 +37,8 @@ from .serializers import (
     LeituraEquipamentoSerializer,
     LeituraEquipamentoDetalheSerializer,
 )
-from .permissions import IsOwnerOrTechnician
+from .permissions import IsOwnerOrTechnician, IsStaff
+from src.application.services.email_service import EmailService
 
 # =============================================================================
 # 1 GESTAO DE USUARIOS E ACESSO PUBLICO
@@ -144,7 +148,7 @@ class AnaliseSoloListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         laudo = self._get_laudo()
-        return AnaliseSolo.objects.filter(laudo=laudo, ativo=True).order_by("n_lab")
+        return AnaliseSolo.objects.filter(laudo=laudo).order_by("n_lab")
 
     def get_serializer_context(self):
         ctx = super().get_serializer_context()
@@ -599,3 +603,47 @@ class DashboardLaudosRecentesView(APIView):
             for l in laudos
         ]
         return Response(data)
+
+
+# email
+class EnviarLaudoEmailView(APIView):
+    """
+    Endpoint para gerar o PDF em memória e enviá-lo diretamente para o e-mail do cliente.
+    Acesso restrito a técnicos (Staff).
+    """
+
+    permission_classes = [IsAuthenticated, IsStaff]
+
+    def post(self, request, pk):
+        laudo = get_object_or_404(Laudo, pk=pk)
+
+        if not laudo.cliente.email:
+            return Response(
+                {
+                    "detalhe": "O cliente vinculado a este laudo não possui um e-mail registado."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # 1. Renderizar o HTML apenas com as análises ativas
+        html_string = render_to_string(
+            "laudos/modelo_oficial.html",
+            {"laudo": laudo, "analises": laudo.analises.filter(ativo=True)},
+        )
+
+        # 2. Geração do PDF estritamente em Buffer (Memory-Safe)
+        pdf_buffer = BytesIO()
+        HTML(string=html_string).write_pdf(pdf_buffer)
+
+        # 3. Delegação de responsabilidade (SRP)
+        sucesso = EmailService.enviar_laudo_cliente(laudo, pdf_buffer)
+
+        if sucesso:
+            return Response(
+                {"detalhe": "E-mail enviado com sucesso."}, status=status.HTTP_200_OK
+            )
+        else:
+            return Response(
+                {"detalhe": "Falha no servidor ao enviar o e-mail."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

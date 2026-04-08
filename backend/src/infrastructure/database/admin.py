@@ -15,7 +15,7 @@ from .models import (
 
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
-    list_display = ("codigo", "nome", "municipio", "contato")
+    list_display = ("codigo", "nome", "municipio", "telefone", "email")
     search_fields = ("nome", "codigo")
 
 

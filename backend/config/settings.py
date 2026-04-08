@@ -145,3 +145,7 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Tipo de ID padrão
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Configuração de E-mail
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "nao-responda@labas.ufu.br"

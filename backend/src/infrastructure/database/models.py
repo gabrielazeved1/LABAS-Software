@@ -12,8 +12,11 @@ class Cliente(models.Model):
 
     nome = models.CharField(max_length=255, verbose_name="Solicitante")
     codigo = models.CharField(max_length=50, unique=True, verbose_name="Codigo Cliente")
-    contato = models.CharField(
-        max_length=100, blank=True, null=True, verbose_name="Contato"
+    telefone = models.CharField(
+        max_length=20, blank=True, null=True, verbose_name="Telefone"
+    )
+    email = models.EmailField(
+        max_length=254, blank=True, null=True, verbose_name="E-mail"
     )
     area = models.CharField(max_length=100, blank=True, null=True, verbose_name="Area")
     municipio = models.CharField(

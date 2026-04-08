@@ -23,6 +23,11 @@ urlpatterns = [
     path("laudos/<int:pk>/", views.LaudoDetailView.as_view(), name="laudo_detail"),
     path("laudos/<int:pk>/pdf/", views.gerar_laudo_pdf, name="laudo_pdf"),
     path(
+        "laudos/<int:pk>/enviar-email/",
+        views.EnviarLaudoEmailView.as_view(),
+        name="laudo_enviar_email",
+    ),
+    path(
         "laudos/<int:laudo_pk>/analises/",
         views.AnaliseSoloListCreateView.as_view(),
         name="analise_list_create",
