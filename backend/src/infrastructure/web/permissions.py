@@ -32,3 +32,14 @@ class IsOwnerOrTechnician(permissions.BasePermission):
         # Bloqueia qualquer tentativa de alteracao por parte do cliente
         is_owner = obj.cliente.usuario == request.user
         return is_owner and (request.method in permissions.SAFE_METHODS)
+
+
+class IsStaff(permissions.BasePermission):
+    """
+    Permite acesso apenas a membros da equipe técnica (is_staff=True).
+    """
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user and request.user.is_authenticated and request.user.is_staff
+        )

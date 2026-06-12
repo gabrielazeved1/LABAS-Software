@@ -1,23 +1,23 @@
 {
-    "workbench.colorCustomizations": {
-        "[Default Dark Modern]": {
-            "tab.activeBorderTop": "#00FF00",
-            "tab.unfocusedActiveBorderTop": "#00FF0088",
-            "textCodeBlock.background": "#00000055"
-        },
-        "editor.wordHighlightStrongBorder": "#FF6347",
-        "editor.wordHighlightBorder": "#FFD700",
-        "editor.selectionHighlightBorder": "#A9A9A9",
-        "activityBar.background": "#2A3102",
-        "titleBar.activeBackground": "#3B4403",
-        "titleBar.activeForeground": "#F8FDD8",
-        "titleBar.inactiveBackground": "#293103",
-        "titleBar.inactiveForeground": "#F7FDDD",
-        "statusBar.background": "#3A4403",
-        "statusBar.foreground": "#F8FDD9",
-        "statusBar.debuggingBackground": "#3A4403",
-        "statusBar.debuggingForeground": "#F8FDD9",
-        "statusBar.noFolderBackground": "#3A4403",
-        "statusBar.noFolderForeground": "#F8FDD9"
-    }
+  "workbench.colorCustomizations": {
+    "[Default Dark Modern]": {
+      "tab.activeBorderTop": "#00FF00",
+      "tab.unfocusedActiveBorderTop": "#00FF0088",
+      "textCodeBlock.background": "#00000055"
+    },
+    "editor.wordHighlightStrongBorder": "#FF6347",
+    "editor.wordHighlightBorder": "#FFD700",
+    "editor.selectionHighlightBorder": "#A9A9A9",
+    "activityBar.background": "#2A3102",
+    "titleBar.activeBackground": "#3B4403",
+    "titleBar.activeForeground": "#F8FDD8",
+    "titleBar.inactiveBackground": "#3A4403",
+    "titleBar.inactiveForeground": "#F8FDD9",
+    "statusBar.background": "#3A4403",
+    "statusBar.foreground": "#F8FDD9",
+    "statusBar.debuggingBackground": "#3A4403",
+    "statusBar.debuggingForeground": "#F8FDD9",
+    "statusBar.noFolderBackground": "#3A4403",
+    "statusBar.noFolderForeground": "#F8FDD9"
+  }
 }
