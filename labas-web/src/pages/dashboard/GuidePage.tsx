@@ -100,6 +100,7 @@ const abas = [
   "Entrada de Amostras",
   "Laudos",
   "Clientes",
+  "Usuários",
 ];
 
 const conteudo: SecaoProps[] = [
@@ -188,6 +189,24 @@ const conteudo: SecaoProps[] = [
     dicas: [
       "O código do cliente não pode ser alterado após a criação.",
       "Clientes inativos podem ter laudos associados — remova com cautela.",
+    ],
+  },
+  {
+    titulo: "Usuários",
+    descricao:
+      "O módulo de usuários gerencia as contas dos técnicos com acesso ao sistema. Não há cadastro público — apenas técnicos já autenticados podem criar novas contas.",
+    passos: [
+      "Acesse 'Usuários' na sidebar.",
+      "Clique em 'Novo Técnico' para abrir o formulário de cadastro.",
+      "Preencha nome completo, usuário, e-mail e senha (mínimo 8 caracteres).",
+      "Confirme a senha e clique em 'Cadastrar'.",
+      "O novo técnico já pode fazer login imediatamente com as credenciais definidas.",
+      "Para remover um técnico, clique no ícone de lixeira na linha correspondente.",
+    ],
+    dicas: [
+      "Você não pode remover sua própria conta — peça a outro técnico para fazer isso se necessário.",
+      "A primeira conta do sistema é criada pelo administrador via terminal durante a instalação.",
+      "Mantenha o cadastro atualizado: remova contas de técnicos que deixaram o laboratório.",
     ],
   },
 ];

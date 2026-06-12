@@ -62,16 +62,20 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const isRefreshRequest = originalRequest.url?.includes("token/refresh");
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isRefreshRequest) {
       originalRequest._retry = true;
 
       const refreshToken = localStorage.getItem("refresh_token");
 
       if (refreshToken) {
         try {
-          const { data } = await api.post<{ access: string }>(
-            "token/refresh/",
+          const baseURL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/";
+          const { data } = await axios.post<{ access: string }>(
+            `${baseURL}token/refresh/`,
             { refresh: refreshToken },
+            { headers: { "Content-Type": "application/json" } },
           );
 
           // Atualiza o token no storage e na requisição que falhou

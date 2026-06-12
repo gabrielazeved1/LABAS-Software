@@ -49,7 +49,7 @@ export default function CalibracaoListPage() {
     setEquipamentoFiltro,
     toggleAtivo,
     removerBateria,
-  } = useCalibracao();
+  } = useCalibracao(EQUIPAMENTOS[0].value);
 
   const handleTabChange = (_: React.SyntheticEvent, newIndex: number) => {
     setTabIndex(newIndex);

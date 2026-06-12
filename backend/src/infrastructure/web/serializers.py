@@ -2,6 +2,7 @@ from rest_framework import serializers
 from django.core.validators import RegexValidator
 from django.contrib.auth.models import User
 from django.db import transaction, IntegrityError
+from django.contrib.auth.password_validation import validate_password
 from src.infrastructure.database.models import (
     Cliente,
     Laudo,
@@ -13,61 +14,85 @@ from src.infrastructure.database.models import (
 
 
 # Serializer para o processo de cadastro inicial no sistema
-# Gerencia a criacao simultanea de credenciais e perfil do cliente
 class UserRegistrationSerializer(serializers.Serializer):
-    """
-    Controlador de registro para novos produtores rurais
-    Mantem a integridade entre a conta de acesso e os dados da fazenda
-    """
-
-    # Atributos de autenticacao do usuario
     username = serializers.CharField(max_length=150)
     password = serializers.CharField(write_only=True)
     email = serializers.EmailField()
-
-    # Atributos de identificacao do cliente no laboratorio
-    nome_cliente = serializers.CharField(max_length=255)
-    codigo_cliente = serializers.CharField(max_length=50)
-    municipio = serializers.CharField(max_length=100, required=False, allow_blank=True)
-    area = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    nome = serializers.CharField(max_length=255)
 
     def validate_username(self, value):
-        """Impede a duplicidade de nomes de usuario no sistema"""
         if User.objects.filter(username=value).exists():
             raise serializers.ValidationError("Este nome de usuario ja existe")
         return value
 
-    def validate_codigo_cliente(self, value):
-        """Impede a duplicidade de codigo de cliente no sistema"""
-        if Cliente.objects.filter(codigo=value).exists():
-            raise serializers.ValidationError("Ja existe um cliente com este codigo")
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Este e-mail ja esta em uso")
         return value
 
     def create(self, validated_data):
-        """Executa a persistencia de dados de forma protegida"""
-        # Garante que ou ambos sao criados ou nenhum dado e salvo no banco
-        with transaction.atomic():
-            # Cria a conta de acesso com criptografia de senha automatica
-            user = User.objects.create_user(
-                username=validated_data["username"],
-                email=validated_data["email"],
-                password=validated_data["password"],
-            )
+        nome_parts = validated_data["nome"].split(" ", 1)
+        first_name = nome_parts[0]
+        last_name = nome_parts[1] if len(nome_parts) > 1 else ""
 
-            try:
-                # Vincula o perfil tecnico do cliente ao usuario recem criado
-                Cliente.objects.create(
-                    usuario=user,
-                    nome=validated_data["nome_cliente"],
-                    codigo=validated_data["codigo_cliente"],
-                    municipio=validated_data.get("municipio", ""),
-                    area=validated_data.get("area", ""),
-                )
-            except IntegrityError:
-                raise serializers.ValidationError(
-                    {"codigo_cliente": "Ja existe um cliente com este codigo"}
-                )
-        return validated_data
+        user = User.objects.create_user(
+            username=validated_data["username"],
+            email=validated_data["email"],
+            password=validated_data["password"],
+            first_name=first_name,
+            last_name=last_name,
+            is_staff=True,
+        )
+        return user
+
+
+# =============================================================================
+# GESTAO DE TECNICOS (staff only)
+# =============================================================================
+
+class TecnicoSerializer(serializers.ModelSerializer):
+    nome = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ["id", "username", "email", "nome", "date_joined"]
+
+    def get_nome(self, obj):
+        return f"{obj.first_name} {obj.last_name}".strip() or obj.username
+
+
+class TecnicoCriarSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150)
+    email = serializers.EmailField()
+    nome = serializers.CharField(max_length=255)
+    password = serializers.CharField(write_only=True)
+
+    def validate_username(self, value):
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Nome de usuario ja existe")
+        return value
+
+    def validate_email(self, value):
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("E-mail ja esta em uso")
+        return value
+
+    def validate_password(self, value):
+        validate_password(value)
+        return value
+
+    def create(self, validated_data):
+        nome_parts = validated_data["nome"].split(" ", 1)
+        first_name = nome_parts[0]
+        last_name = nome_parts[1] if len(nome_parts) > 1 else ""
+        return User.objects.create_user(
+            username=validated_data["username"],
+            email=validated_data["email"],
+            password=validated_data["password"],
+            first_name=first_name,
+            last_name=last_name,
+            is_staff=True,
+        )
 
 
 # Serializer simplificado para exibicao de dados do proprietario

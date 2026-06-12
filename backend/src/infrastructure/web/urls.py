@@ -97,7 +97,12 @@ urlpatterns = [
         name="cliente_detail",
     ),
     # ---------------------------------------------------------
-    # 6 DASHBOARD DO TÉCNICO
+    # 6 GESTAO DE TECNICOS (staff only)
+    # ---------------------------------------------------------
+    path("tecnicos/", views.TecnicoListCreateView.as_view(), name="tecnicos_list_create"),
+    path("tecnicos/<int:pk>/", views.TecnicoDestroyView.as_view(), name="tecnico_destroy"),
+    # ---------------------------------------------------------
+    # 7 DASHBOARD DO TÉCNICO
     # ---------------------------------------------------------
     path(
         "dashboard/stats/",

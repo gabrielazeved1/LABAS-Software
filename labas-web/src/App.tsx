@@ -2,7 +2,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import LoginPage from "./pages/auth/LoginPage";
-import RegisterPage from "./pages/auth/RegisterPage";
 import DashboardPlaceholder from "./pages/dashboard/DashboardPlaceholder";
 import PrivateRoute from "./components/shared/PrivateRoute";
 import StaffRoute from "./components/shared/StaffRoute";
@@ -25,6 +24,7 @@ const LaudoDetalhePage = lazy(() => import("./pages/laudos/LaudoDetalhePage"));
 const LaudosPage = lazy(() => import("./pages/laudos/LaudosPage"));
 const ClientesPage = lazy(() => import("./pages/clientes/ClientesPage"));
 const ClienteFormPage = lazy(() => import("./pages/clientes/ClienteFormPage"));
+const UsuariosPage = lazy(() => import("./pages/usuarios/UsuariosPage"));
 const GuidePage = lazy(() => import("./pages/dashboard/GuidePage"));
 
 const Spinner = () => (
@@ -38,7 +38,6 @@ export default function App() {
     <Routes>
       {/* Rotas públicas */}
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
 
       {/* Rotas protegidas — qualquer usuário autenticado */}
       <Route element={<PrivateRoute />}>
@@ -170,6 +169,16 @@ export default function App() {
             <AppShell>
               <Suspense fallback={<Spinner />}>
                 <ClienteFormPage />
+              </Suspense>
+            </AppShell>
+          }
+        />
+        <Route
+          path="/usuarios"
+          element={
+            <AppShell>
+              <Suspense fallback={<Spinner />}>
+                <UsuariosPage />
               </Suspense>
             </AppShell>
           }

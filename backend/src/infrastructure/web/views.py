@@ -16,6 +16,7 @@ from rest_framework.authentication import SessionAuthentication
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from weasyprint import HTML
+from django.contrib.auth.models import User
 
 from src.infrastructure.database.models import (
     AnaliseSolo,
@@ -30,6 +31,8 @@ from .serializers import (
     ClienteCadastroSerializer,
     LaudoSerializer,
     UserRegistrationSerializer,
+    TecnicoSerializer,
+    TecnicoCriarSerializer,
     BateriaCalibracaoSerializer,
     BateriaCalibracaoAtivoSerializer,
     PontoCalibracaoSerializer,
@@ -61,9 +64,47 @@ class RegisterUserView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(
-            {"message": "Usuario e perfil de Cliente criados com sucesso"},
+            {"message": "Tecnico cadastrado com sucesso"},
             status=status.HTTP_201_CREATED,
         )
+
+
+# =============================================================================
+# GESTAO DE TECNICOS (staff only)
+# =============================================================================
+
+
+class TecnicoListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated, IsStaff]
+
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return TecnicoCriarSerializer
+        return TecnicoSerializer
+
+    def get_queryset(self):
+        return User.objects.filter(is_staff=True).order_by("username")
+
+    def create(self, request, *args, **kwargs):
+        serializer = TecnicoCriarSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response(TecnicoSerializer(user).data, status=status.HTTP_201_CREATED)
+
+
+class TecnicoDestroyView(generics.DestroyAPIView):
+    permission_classes = [IsAuthenticated, IsStaff]
+    queryset = User.objects.filter(is_staff=True)
+
+    def destroy(self, request, *args, **kwargs):
+        user = self.get_object()
+        if user == request.user:
+            return Response(
+                {"detail": "Voce nao pode remover sua propria conta."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # Retorna os dados do usuario autenticado atualmente

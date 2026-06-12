@@ -8,17 +8,17 @@
  */
 
 import { useState, useEffect } from "react";
-import { Link as RouterLink, Navigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
+
 import {
   Box,
   Button,
   CircularProgress,
+  Divider,
   TextField,
   Typography,
-  Link,
   InputAdornment,
   IconButton,
-  Divider,
 } from "@mui/material";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import {
@@ -198,19 +198,6 @@ export default function LoginPage() {
           </Button>
         </Box>
 
-        <Divider sx={{ my: 4 }} />
-
-        <Typography variant="body2" color="text.secondary" textAlign="center">
-          Novo produtor rural?{" "}
-          <Link
-            component={RouterLink}
-            to="/register"
-            color="primary"
-            fontWeight={600}
-          >
-            Criar conta
-          </Link>
-        </Typography>
       </Box>
     </Box>
   );

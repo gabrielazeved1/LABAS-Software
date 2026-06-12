@@ -12,13 +12,13 @@ import type { Equipamento } from "../types/calibracao";
  * Após toggleAtivo, o backend altera o estado de múltiplas baterias,
  * então sempre fazemos refetch completo.
  */
-export function useCalibracao() {
+export function useCalibracao(equipamentoInicial?: Equipamento) {
   const { showError, showSuccess } = useSnackbar();
   const [baterias, setBaterias] = useState<BateriaCalibracaoComPontos[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [equipamentoFiltro, setEquipamentoFiltro] = useState<
     Equipamento | undefined
-  >(undefined);
+  >(equipamentoInicial);
 
   const carregar = useCallback(async () => {
     setLoading(true);
