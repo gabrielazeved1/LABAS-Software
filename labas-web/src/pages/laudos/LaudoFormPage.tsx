@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Controller } from "react-hook-form";
 import {
   Autocomplete,
@@ -24,9 +24,11 @@ export default function LaudoFormPage() {
     null,
   );
   const [clienteInput, setClienteInput] = useState("");
+  const buscarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleClienteInput = (_: React.SyntheticEvent, value: string) => {
     setClienteInput(value);
+    if (buscarTimer.current) clearTimeout(buscarTimer.current);
     if (value.trim().length === 0) {
       if (clienteSelecionado) {
         setClienteSelecionado(null);
@@ -42,7 +44,7 @@ export default function LaudoFormPage() {
       limpar();
       return;
     }
-    buscar(value);
+    buscarTimer.current = setTimeout(() => void buscar(value), 300);
   };
 
   return (

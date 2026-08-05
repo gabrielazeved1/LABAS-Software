@@ -1,5 +1,70 @@
 ACHADOS — Testes de Integração LABAS
 Gerado durante implementação das jornadas de teste (2026-08-05)
+Última execução de jornadas: 2026-08-05
+======================================================================
+
+[J-UX-04-03] LaudoFormPage — busca de cliente sem debounce
+----------------------------------------------------------------------
+Jornada  : J-UX-04 — Criar Laudo | J-UX-02 — Clientes
+Caso     : #03 — usuário digita nome do cliente no autocomplete
+Esperado : Busca com debounce de ~300ms — no máximo 1 requisição por sequência
+Obtido   : Cada keystroke disparava uma chamada HTTP imediata (sem timeout)
+           O hook useClientes já tem AbortController (cancela em voo),
+           mas ainda gerava requisições desnecessárias em cada tecla.
+Impacto  : Médio — excesso de requisições; perceptível em conexões lentas
+Arquivo  : src/pages/laudos/LaudoFormPage.tsx linha 45
+Correção : Adicionado buscarTimer (useRef<ReturnType<typeof setTimeout>>).
+           handleClienteInput faz clearTimeout + setTimeout(..., 300) antes
+           de chamar buscar(value) — mesmo padrão de LaudoEditPage.tsx linha 206.
+Situação : CORRIGIDO em 2026-08-05
+
+[J-UX-02-11] ClientesPage — window.confirm em vez de ConfirmDialog
+----------------------------------------------------------------------
+Jornada  : J-UX-02 — Clientes
+Caso     : #11 — usuário clica em remover cliente
+Esperado : Dialog de confirmação visual (ConfirmDialog) com botões "Remover"
+           e "Cancelar", estado de loading durante a exclusão
+Obtido   : window.confirm() nativo do browser — sem styling, sem loading state,
+           botão de excluir não desabilitado durante a requisição
+Impacto  : Baixo — funcionava, mas inconsistente com UsuariosPage e LaudoEditPage
+           que usam ConfirmDialog; comentário no próprio ConfirmDialog.tsx diz
+           "Nunca use window.confirm()"
+Arquivo  : src/pages/clientes/ClientesPage.tsx linha 50
+Correção : Substituído por ConfirmDialog. Adicionado estado confirmarRemocao
+           (Cliente | null) e removendo (boolean). Botões desabilitados durante
+           a exclusão.
+Situação : CORRIGIDO em 2026-08-05
+
+[J-UX-01-04] loginSchema — mínimo de senha menor que o exigido na criação
+----------------------------------------------------------------------
+Jornada  : J-UX-01 — Login
+Caso     : #04 — validação client-side do formulário de login
+Esperado : Consistência com os 8 caracteres mínimos exigidos em UsuariosPage
+Obtido   : loginSchema.ts exige mínimo de 6 caracteres para senha
+Impacto  : Baixo — não é um bug funcional: a validação de login não precisa
+           espelhar a de criação. Usuários sempre terão senhas ≥ 8 chars
+           (criadas pelo UsuariosPage). O min(6) apenas evita submits
+           claramente vazios; o backend rejeita se errado.
+           Registrado para fins de consistência de código.
+Arquivo  : src/validators/loginSchema.ts linha 15
+Correção : min(6) → min(8), alinhando com UsuariosPage e o backend Django.
+Situação : CORRIGIDO em 2026-08-05
+======================================================================
+
+[J5-02-FRONT] Bateria sem curva: resultado_calculado=0.0 exibia "0.0000" em vez de "—"
+----------------------------------------------------------------------
+Jornada  : J-UX-05 — Entrada de Amostras (bancada)
+Caso     : #09 — usuário salva leitura com bateria ativa mas sem curva calculada
+Esperado : Coluna "Resultado Calculado" exibe "—" (valor indefinido)
+Obtido   : Coluna exibia "0.0000" (default=0 do model Django retornado como 0.0)
+Impacto  : Baixo — baterias sem curva não devem existir em produção; a UI já
+           exibe alerta laranja nesse caso. Mas se o salvamento ocorrer mesmo
+           assim, o usuário via um resultado falso.
+Correção : useEntradaLote.ts — ao montar linhaAtualizada, verifica se
+           bateriaAtiva.coeficiente_angular_a === null e, se sim, força
+           resultado_preview = null → renderizado como "—" na coluna.
+Situação : CORRIGIDO em 2026-08-05 (frontend apenas)
+Raiz     : Backend (J5-02 aberto) — model usa default=0 em vez de null.
 ======================================================================
 
 [J5-01] clean() de LeituraEquipamento exigia fator_diluicao para ES/MO
