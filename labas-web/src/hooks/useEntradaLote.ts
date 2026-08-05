@@ -81,7 +81,7 @@ export function useEntradaLote() {
         bateriaAtiva.elemento !== elemento
       ) {
         showError(
-          "A curva ativa nao corresponde ao equipamento/elemento selecionado.",
+          "A curva ativa não corresponde ao equipamento/elemento selecionado.",
         );
         return oldRow;
       }
@@ -111,9 +111,12 @@ export function useEntradaLote() {
           ...(fdNum !== undefined && { fator_diluicao: fdNum }),
         });
 
+        // J5-02: backend retorna 0.0 (default do model) quando a bateria não tem
+        // curva calculada. Tratamos como null para exibir "—" em vez de "0.0000".
+        const semCurva = bateriaAtiva.coeficiente_angular_a === null;
         const linhaAtualizada: LinhaBancada = {
           ...newRow,
-          resultado_preview: resposta.resultado_calculado ?? null,
+          resultado_preview: semCurva ? null : (resposta.resultado_calculado ?? null),
           status: "salvo",
         };
 
@@ -136,11 +139,26 @@ export function useEntradaLote() {
     [bateriaAtiva, equipamento, elemento, showSuccess, showApiError, showError],
   );
 
+  const handleSetEquipamento = useCallback((eq: Equipamento | "") => {
+    setEquipamento(eq);
+    setElemento("");
+    setBateriaAtiva(null);
+    setLinhas([]);
+    setJaFiltrou(false);
+  }, []);
+
+  const handleSetElemento = useCallback((el: Elemento | "") => {
+    setElemento(el);
+    setBateriaAtiva(null);
+    setLinhas([]);
+    setJaFiltrou(false);
+  }, []);
+
   return {
     equipamento,
-    setEquipamento,
+    handleSetEquipamento,
     elemento,
-    setElemento,
+    handleSetElemento,
     bateriaAtiva,
     jaFiltrou,
     linhas,

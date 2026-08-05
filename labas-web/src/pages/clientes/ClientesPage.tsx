@@ -21,6 +21,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import { useNavigate } from "react-router-dom";
 import { clienteService } from "../../services/clienteService";
 import { useSnackbar } from "../../hooks/useSnackbar";
+import ConfirmDialog from "../../components/shared/ConfirmDialog";
 import type { Cliente } from "../../types/cliente";
 
 export default function ClientesPage() {
@@ -28,6 +29,8 @@ export default function ClientesPage() {
   const { showApiError, showSuccess } = useSnackbar();
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmarRemocao, setConfirmarRemocao] = useState<Cliente | null>(null);
+  const [removendo, setRemovendo] = useState(false);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -45,19 +48,20 @@ export default function ClientesPage() {
     void carregar();
   }, [carregar]);
 
-  const handleRemover = useCallback(
-    async (codigo: string) => {
-      if (!window.confirm(`Remover cliente ${codigo}?`)) return;
-      try {
-        await clienteService.remover(codigo);
-        showSuccess("Cliente removido.");
-        setClientes((prev) => prev.filter((c) => c.codigo !== codigo));
-      } catch (err) {
-        showApiError(err);
-      }
-    },
-    [showApiError, showSuccess],
-  );
+  const handleRemover = useCallback(async () => {
+    if (!confirmarRemocao) return;
+    setRemovendo(true);
+    try {
+      await clienteService.remover(confirmarRemocao.codigo);
+      showSuccess("Cliente removido.");
+      setClientes((prev) => prev.filter((c) => c.codigo !== confirmarRemocao.codigo));
+      setConfirmarRemocao(null);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setRemovendo(false);
+    }
+  }, [confirmarRemocao, showApiError, showSuccess]);
 
   if (loading) {
     return (
@@ -127,7 +131,7 @@ export default function ClientesPage() {
                       <IconButton
                         size="small"
                         color="error"
-                        onClick={() => handleRemover(c.codigo)}
+                        onClick={() => setConfirmarRemocao(c)}
                       >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
@@ -139,6 +143,16 @@ export default function ClientesPage() {
           </Table>
         </TableContainer>
       )}
+
+      <ConfirmDialog
+        open={confirmarRemocao !== null}
+        title="Remover cliente"
+        message={`Deseja remover permanentemente o cliente "${confirmarRemocao?.nome}" (${confirmarRemocao?.codigo})? Esta ação não pode ser desfeita.`}
+        confirmLabel="Remover"
+        loading={removendo}
+        onConfirm={() => void handleRemover()}
+        onCancel={() => setConfirmarRemocao(null)}
+      />
     </Box>
   );
 }
