@@ -1,3 +1,4 @@
+from datetime import date
 from django.db import models, transaction
 from django.utils import timezone
 from django.core.exceptions import ValidationError
@@ -53,7 +54,7 @@ class Laudo(models.Model):
         Cliente, on_delete=models.CASCADE, related_name="laudos"
     )
     data_emissao = models.DateField(
-        default=timezone.now, verbose_name="Data de Entrada"
+        default=date.today, verbose_name="Data de Entrada"
     )
     data_saida = models.DateField(blank=True, null=True, verbose_name="Data de Saída")
     observacoes = models.TextField(blank=True, null=True, verbose_name="Observações")
@@ -62,12 +63,16 @@ class Laudo(models.Model):
         if not self.codigo_laudo:
             with transaction.atomic():
                 ano = timezone.now().year
-                count = (
-                    Laudo.objects.filter(codigo_laudo__startswith=f"L-{ano}/")
-                    .select_for_update()
-                    .count()
+                ultimo = (
+                    Laudo.objects.select_for_update()
+                    .filter(codigo_laudo__startswith=f"L-{ano}/")
+                    .order_by("-id")
+                    .first()
                 )
-                self.codigo_laudo = f"L-{ano}/{count + 1}"
+                proximo_num = (
+                    int(ultimo.codigo_laudo.split("/")[1]) + 1
+                ) if ultimo else 1
+                self.codigo_laudo = f"L-{ano}/{proximo_num}"
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -84,13 +89,13 @@ class AnaliseSolo(models.Model):
     Atributos agora possuem default=0 para evitar erros matematicos e nulos na API.
     """
 
-    n_lab = models.CharField(max_length=50, verbose_name="N Lab")
+    n_lab = models.CharField(max_length=50, unique=True, verbose_name="N Lab")
     laudo = models.ForeignKey(Laudo, on_delete=models.CASCADE, related_name="analises")
     ativo = models.BooleanField(default=True, verbose_name="Ativo")
     referencia = models.CharField(
         max_length=100, blank=True, null=True, verbose_name="Referência Cliente"
     )
-    data_entrada = models.DateField(default=timezone.now, verbose_name="Data Entrada")
+    data_entrada = models.DateField(default=date.today, verbose_name="Data Entrada")
     data_saida = models.DateField(blank=True, null=True, verbose_name="Data Saida")
 
     # [PHMETRO] Atributos de Acidez Ativa
@@ -356,9 +361,19 @@ class AnaliseSolo(models.Model):
     )
 
     def clean(self):
-        """Validacao de integridade antes do salvamento no banco."""
-        if self.ph_agua and (self.ph_agua < 0 or self.ph_agua > 14):
-            raise ValidationError({"ph_agua": "O pH deve estar entre 0 e 14."})
+        """Validação de integridade antes do salvamento no banco."""
+        campos_ph = [
+            ("ph_agua", "pH em Água"),
+            ("ph_cacl2", "pH em CaCl₂"),
+            ("ph_kcl", "pH em KCl"),
+        ]
+        erros = {}
+        for campo, label in campos_ph:
+            valor = getattr(self, campo)
+            if valor and (valor < 0 or valor > 14):
+                erros[campo] = f"{label} deve estar entre 0 e 14."
+        if erros:
+            raise ValidationError(erros)
 
     def __str__(self):
         return f"Análise {self.n_lab} — Laudo {self.laudo.codigo_laudo}"
@@ -366,7 +381,6 @@ class AnaliseSolo(models.Model):
     class Meta:
         verbose_name = "Analise de Solo"
         verbose_name_plural = "Analises de Solo"
-        unique_together = [("laudo", "n_lab")]
 
 
 class BateriaCalibracao(models.Model):
@@ -381,7 +395,7 @@ class BateriaCalibracao(models.Model):
         ("FC", "Fotometro de Chama"),
         ("ES", "Espectrofotometro"),
         ("TI", "Titulacao"),
-        ("PH", "Phagametro"),
+        ("PH", "pHmetro"),
     ]
     ELEMENTO_CHOICES = [
         ("Ca", "Calcio"),
@@ -431,14 +445,14 @@ class BateriaCalibracao(models.Model):
         decimal_places=8,
         blank=True,
         null=True,
-        verbose_name="Inclinacao (b)",
+        verbose_name="Inclinação (a) — slope",
     )
     coeficiente_linear_b = models.DecimalField(
         max_digits=15,
         decimal_places=8,
         blank=True,
         null=True,
-        verbose_name="Intercepto (a)",
+        verbose_name="Intercepto (b) — intercept",
     )
     r_quadrado = models.DecimalField(
         max_digits=7, decimal_places=6, blank=True, null=True, verbose_name="R2"
@@ -467,7 +481,8 @@ class BateriaCalibracao(models.Model):
     def clean(self):
         """Valida obrigatoriedade de campos dependendo do equipamento escolhido."""
         erros = {}
-        if self.equipamento in ["AA", "FC", "ES"]:
+        # MO usa fórmula fixa sem volumes (alinhado com o signal gatekeeper)
+        if self.equipamento in ["AA", "FC", "ES"] and self.elemento != "MO":
             if self.volume_solo is None:
                 erros["volume_solo"] = (
                     f"Obrigatorio informar o Volume de Solo para {self.get_equipamento_display()}."
@@ -528,7 +543,8 @@ class LeituraEquipamento(models.Model):
     def clean(self):
         """Valida integridade estequiometrica da leitura."""
         if hasattr(self, "bateria") and self.bateria is not None:
-            if self.bateria.equipamento in ["AA", "FC", "ES"]:
+            # MO usa fórmula fixa sem diluição (alinhado com o signal gatekeeper)
+            if self.bateria.equipamento in ["AA", "FC", "ES"] and self.bateria.elemento != "MO":
                 if self.fator_diluicao is None:
                     raise ValidationError(
                         {

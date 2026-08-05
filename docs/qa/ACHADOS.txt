@@ -1,0 +1,64 @@
+ACHADOS — Testes de Integração LABAS
+Gerado durante implementação das jornadas de teste (2026-08-05)
+======================================================================
+
+[J5-01] clean() de LeituraEquipamento exigia fator_diluicao para ES/MO
+----------------------------------------------------------------------
+Jornada  : 5 — Bancada
+Arquivo  : src/infrastructure/database/models.py (LeituraEquipamento.clean)
+Situação : CORRIGIDO em 2026-08-05
+
+LeituraEquipamento.clean() exigia fator_diluicao para todo equipamento ES,
+incluindo MO. O signal, porém, já excluía MO do gatekeeper de diluição pois
+calcular_mo_disponivel não usa esse valor. O técnico era forçado a preencher
+um campo irrelevante ao registrar a leitura de MO na bancada.
+
+Correção aplicada:
+  Antes : if self.bateria.equipamento in ["AA", "FC", "ES"]:
+  Depois: if self.bateria.equipamento in ["AA", "FC", "ES"] and self.bateria.elemento != "MO":
+
+[J5-02] Bateria sem curva retorna resultado_calculado=0.0 em vez de null
+----------------------------------------------------------------------
+Jornada  : 5 — Bancada
+Arquivo  : src/infrastructure/database/models.py (AnaliseSolo) + views.py
+Situação : Aberto (baixo impacto — comportamento confuso mas não crítico)
+
+Quando uma leitura é registrada para uma bateria sem curva calculada,
+o signal retorna sem atualizar o campo da AnaliseSolo. O campo permanece
+com o default=0 do model (Decimal('0.0000')), e a view retorna
+resultado_calculado=0.0. O frontend não consegue distinguir "calculado
+como zero" de "não calculado". Seria mais claro retornar null.
+======================================================================
+
+
+[J2-01] validate_codigo é código morto
+----------------------------------------------------------------------
+Jornada  : 2 — Clientes
+Arquivo  : src/infrastructure/web/serializers.py
+Situação : Aberto (não corrigido — baixo impacto)
+
+O método validate_codigo do ClienteCadastroSerializer nunca é executado.
+O DRF injeta automaticamente um UniqueValidator em campos com unique=True
+no model, e esse validador roda dentro de field.run_validation(). Quando
+falha, o DRF pula o bloco else onde validate_codigo seria chamado — tanto
+no create quanto no update. O método pode ser removido sem nenhum impacto
+no comportamento da API.
+
+
+[J3-01] clean() de BateriaCalibracao exigia volumes para ES/MO
+----------------------------------------------------------------------
+Jornada  : 3 — Calibração
+Arquivo  : src/infrastructure/database/models.py
+Situação : CORRIGIDO em 2026-08-05
+
+O método clean() do model BateriaCalibracao exigia volume_solo e
+volume_extrator para todo equipamento ES, incluindo MO. Porém o signal
+(signals.py) já excluía MO do gatekeeper de volumes desde a correção
+A-07, pois calcular_mo_disponivel usa fórmula fixa e não depende de
+volumes. A inconsistência forçava o técnico a preencher campos
+irrelevantes ao cadastrar uma bateria ES/MO via API, recebendo 400
+caso os campos ficassem em branco.
+
+Correção aplicada:
+  Antes : if self.equipamento in ["AA", "FC", "ES"]:
+  Depois: if self.equipamento in ["AA", "FC", "ES"] and self.elemento != "MO":
