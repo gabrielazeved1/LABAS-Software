@@ -34,17 +34,18 @@ export function useCorrecaoAnalise(
   const [loading, setLoading] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
-  const carregar = useCallback(async () => {
+  const carregar = useCallback(async (signal?: AbortSignal) => {
     if (!laudoId || !analiseId) return;
     setLoading(true);
     try {
       const [dadosAnalise, dadosLeituras] = await Promise.all([
-        analiseService.buscar(laudoId, analiseId),
-        correcaoService.listarLeituras(analiseId),
+        analiseService.buscar(laudoId, analiseId, signal),
+        correcaoService.listarLeituras(analiseId, signal),
       ]);
       setAnalise(dadosAnalise);
       setLeituras(dadosLeituras);
     } catch (err) {
+      if ((err as { code?: string })?.code === "ERR_CANCELED") return;
       showApiError(err);
     } finally {
       setLoading(false);
@@ -52,7 +53,9 @@ export function useCorrecaoAnalise(
   }, [laudoId, analiseId, showApiError]);
 
   useEffect(() => {
-    void carregar();
+    const controller = new AbortController();
+    void carregar(controller.signal);
+    return () => controller.abort();
   }, [carregar]);
 
   const corrigirLeitura = useCallback(

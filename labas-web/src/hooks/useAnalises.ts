@@ -27,13 +27,14 @@ export function useAnalises(laudoId: number | undefined): UseAnalisesResult {
   const [editando, setEditando] = useState<number | null>(null);
   const [removendo, setRemovendo] = useState<number | null>(null);
 
-  const carregar = useCallback(async () => {
+  const carregar = useCallback(async (signal?: AbortSignal) => {
     if (!laudoId) return;
     setLoading(true);
     try {
-      const data = await analiseService.listar(laudoId);
+      const data = await analiseService.listar(laudoId, signal);
       setAnalises(data);
     } catch (err) {
+      if ((err as { code?: string })?.code === "ERR_CANCELED") return;
       showApiError(err);
     } finally {
       setLoading(false);
@@ -41,7 +42,9 @@ export function useAnalises(laudoId: number | undefined): UseAnalisesResult {
   }, [laudoId, showApiError]);
 
   useEffect(() => {
-    void carregar();
+    const controller = new AbortController();
+    void carregar(controller.signal);
+    return () => controller.abort();
   }, [carregar]);
 
   const criar = useCallback(
@@ -54,6 +57,7 @@ export function useAnalises(laudoId: number | undefined): UseAnalisesResult {
         showSuccess("Análise adicionada com sucesso.");
       } catch (err) {
         showApiError(err);
+        throw err;
       } finally {
         setSalvando(false);
       }
@@ -80,6 +84,7 @@ export function useAnalises(laudoId: number | undefined): UseAnalisesResult {
         showSuccess("Análise atualizada com sucesso.");
       } catch (err) {
         showApiError(err);
+        throw err;
       } finally {
         setEditando(null);
       }
@@ -99,11 +104,12 @@ export function useAnalises(laudoId: number | undefined): UseAnalisesResult {
         setAnalises((prev) =>
           prev.map((a) => (a.id === analiseId ? atualizada : a)),
         );
+        showSuccess(ativo ? "Análise ativada." : "Análise desativada.");
       } catch (err) {
         showApiError(err);
       }
     },
-    [laudoId, showApiError],
+    [laudoId, showSuccess, showApiError],
   );
 
   const remover = useCallback(

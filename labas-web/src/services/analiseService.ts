@@ -4,14 +4,15 @@ import type { AnaliseSolo, AnaliseSoloPayload } from "../types/analise";
 const base = (laudoId: number) => `/laudos/${laudoId}/analises/`;
 
 export const analiseService = {
-  async listar(laudoId: number): Promise<AnaliseSolo[]> {
-    const { data } = await api.get<AnaliseSolo[]>(base(laudoId));
+  async listar(laudoId: number, signal?: AbortSignal): Promise<AnaliseSolo[]> {
+    const { data } = await api.get<AnaliseSolo[]>(base(laudoId), { signal });
     return data;
   },
 
-  async buscar(laudoId: number, analiseId: number): Promise<AnaliseSolo> {
+  async buscar(laudoId: number, analiseId: number, signal?: AbortSignal): Promise<AnaliseSolo> {
     const { data } = await api.get<AnaliseSolo>(
       `${base(laudoId)}${analiseId}/`,
+      { signal },
     );
     return data;
   },

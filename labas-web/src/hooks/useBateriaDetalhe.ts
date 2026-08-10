@@ -17,16 +17,17 @@ export function useBateriaDetalhe(id: number | null) {
   const [bateria, setBateria] = useState<BateriaCalibracaoComPontos | null>(
     null,
   );
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(id !== null);
   const [salvandoParametros, setSalvandoParametros] = useState(false);
 
-  const carregar = useCallback(async () => {
+  const carregar = useCallback(async (signal?: AbortSignal) => {
     if (id === null) return;
     setLoading(true);
     try {
-      const data = await calibracaoService.buscarBateria(id);
+      const data = await calibracaoService.buscarBateria(id, signal);
       setBateria(data);
-    } catch {
+    } catch (err) {
+      if ((err as { code?: string })?.code === "ERR_CANCELED") return;
       showError("Erro ao carregar bateria.");
     } finally {
       setLoading(false);
@@ -34,7 +35,9 @@ export function useBateriaDetalhe(id: number | null) {
   }, [id, showError]);
 
   useEffect(() => {
-    carregar();
+    const controller = new AbortController();
+    void carregar(controller.signal);
+    return () => controller.abort();
   }, [carregar]);
 
   const adicionarPonto = useCallback(
@@ -70,10 +73,10 @@ export function useBateriaDetalhe(id: number | null) {
       setSalvandoParametros(true);
       try {
         await calibracaoService.atualizarBateria(bateria.id, payload);
-        showSuccess("Parametros da bateria atualizados.");
+        showSuccess("Parâmetros da bateria atualizados.");
         await carregar();
       } catch {
-        showError("Erro ao atualizar parametros da bateria.");
+        showError("Erro ao atualizar parâmetros da bateria.");
       } finally {
         setSalvandoParametros(false);
       }

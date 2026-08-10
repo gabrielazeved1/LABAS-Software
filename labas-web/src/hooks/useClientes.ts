@@ -1,5 +1,5 @@
 // src/hooks/useClientes.ts
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { clienteService } from "../services/clienteService";
 import { useSnackbar } from "./useSnackbar";
 import type { Cliente } from "../types/cliente";
@@ -41,20 +41,27 @@ export function useClientes(): UseClientesReturn {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(false);
   const { showApiError } = useSnackbar();
+  const controllerRef = useRef<AbortController | null>(null);
 
   const buscar = useCallback(
     async (search: string) => {
-      // Não faz requisição para strings muito curtas
+      // Cancela requisição anterior em voo
+      controllerRef.current?.abort();
+
       if (search.trim().length < 2) {
         setClientes([]);
         return;
       }
 
+      const controller = new AbortController();
+      controllerRef.current = controller;
+
       setLoading(true);
       try {
-        const resultado = await clienteService.listar(search);
+        const resultado = await clienteService.listar(search, controller.signal);
         setClientes(resultado);
       } catch (err) {
+        if ((err as { code?: string })?.code === "ERR_CANCELED") return;
         showApiError(err);
         setClientes([]);
       } finally {

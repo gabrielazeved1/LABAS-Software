@@ -75,6 +75,9 @@ export interface BateriaCalibracao {
   /** Indica se esta é a bateria ativa para o elemento/equipamento no dia */
   ativo: boolean;
 
+  /** Quantidade de leituras de amostras reais vinculadas a esta bateria */
+  leituras_count: number;
+
   /**
    * Equação formatada gerada pelo backend — ex: "y = 0.4521x + 0.0031"
    * Campo read-only: nunca incluir em payloads de criação ou edição.

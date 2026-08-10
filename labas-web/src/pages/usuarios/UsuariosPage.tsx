@@ -22,9 +22,24 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { z } from "zod";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { usuarioService, type Tecnico, type TecnicoCriarPayload } from "../../services/usuarioService";
 import { useAuth } from "../../hooks/useAuth";
+import ConfirmDialog from "../../components/shared/ConfirmDialog";
+
+const tecnicoSchema = z
+  .object({
+    nome: z.string().min(1, "Nome é obrigatório"),
+    username: z.string().min(3, "Mínimo de 3 caracteres"),
+    email: z.string().email("E-mail inválido"),
+    password: z.string().min(8, "Mínimo de 8 caracteres"),
+    password2: z.string(),
+  })
+  .refine((d) => d.password === d.password2, {
+    message: "As senhas não coincidem",
+    path: ["password2"],
+  });
 
 const FORM_VAZIO: TecnicoCriarPayload & { password2: string } = {
   username: "",
@@ -44,6 +59,7 @@ export default function UsuariosPage() {
   const [salvando, setSalvando] = useState(false);
   const [form, setForm] = useState(FORM_VAZIO);
   const [erros, setErros] = useState<Partial<typeof FORM_VAZIO>>({});
+  const [confirmarRemocao, setConfirmarRemocao] = useState<Tecnico | null>(null);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -73,17 +89,18 @@ export default function UsuariosPage() {
   };
 
   const validar = (): boolean => {
+    const resultado = tecnicoSchema.safeParse(form);
+    if (resultado.success) {
+      setErros({});
+      return true;
+    }
     const novosErros: Partial<typeof FORM_VAZIO> = {};
-    if (!form.nome.trim()) novosErros.nome = "Nome é obrigatório";
-    if (!form.username.trim() || form.username.length < 3)
-      novosErros.username = "Mínimo de 3 caracteres";
-    if (!form.email.includes("@")) novosErros.email = "E-mail inválido";
-    if (form.password.length < 8)
-      novosErros.password = "Mínimo de 8 caracteres";
-    if (form.password !== form.password2)
-      novosErros.password2 = "As senhas não coincidem";
+    for (const issue of resultado.error.issues) {
+      const campo = issue.path[0] as keyof typeof FORM_VAZIO;
+      if (campo && !novosErros[campo]) novosErros[campo] = issue.message;
+    }
     setErros(novosErros);
-    return Object.keys(novosErros).length === 0;
+    return false;
   };
 
   const handleSalvar = async () => {
@@ -114,22 +131,28 @@ export default function UsuariosPage() {
   };
 
   const handleRemover = useCallback(
-    async (tecnico: Tecnico) => {
+    (tecnico: Tecnico) => {
       if (tecnico.id === usuarioLogado?.id) {
         showError("Você não pode remover sua própria conta.");
         return;
       }
-      if (!window.confirm(`Remover o técnico "${tecnico.username}"?`)) return;
-      try {
-        await usuarioService.remover(tecnico.id);
-        setTecnicos((prev) => prev.filter((t) => t.id !== tecnico.id));
-        showSuccess("Técnico removido.");
-      } catch (err) {
-        showApiError(err);
-      }
+      setConfirmarRemocao(tecnico);
     },
-    [usuarioLogado, showApiError, showSuccess, showError],
+    [usuarioLogado, showError],
   );
+
+  const confirmarRemoverTecnico = useCallback(async () => {
+    if (!confirmarRemocao) return;
+    try {
+      await usuarioService.remover(confirmarRemocao.id);
+      setTecnicos((prev) => prev.filter((t) => t.id !== confirmarRemocao.id));
+      showSuccess("Técnico removido.");
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setConfirmarRemocao(null);
+    }
+  }, [confirmarRemocao, showApiError, showSuccess]);
 
   const campo = (
     field: keyof typeof FORM_VAZIO,
@@ -237,6 +260,15 @@ export default function UsuariosPage() {
           </Table>
         </TableContainer>
       )}
+
+      <ConfirmDialog
+        open={confirmarRemocao !== null}
+        title="Remover técnico"
+        message={`Deseja remover permanentemente o técnico "${confirmarRemocao?.username}"? Esta ação não pode ser desfeita.`}
+        confirmLabel="Remover"
+        onConfirm={confirmarRemoverTecnico}
+        onCancel={() => setConfirmarRemocao(null)}
+      />
 
       <Dialog open={dialogAberto} onClose={fecharDialog} maxWidth="xs" fullWidth>
         <DialogTitle>Novo Técnico</DialogTitle>

@@ -13,19 +13,20 @@ import type { Equipamento } from "../types/calibracao";
  * então sempre fazemos refetch completo.
  */
 export function useCalibracao(equipamentoInicial?: Equipamento) {
-  const { showError, showSuccess } = useSnackbar();
+  const { showError, showSuccess, showApiError } = useSnackbar();
   const [baterias, setBaterias] = useState<BateriaCalibracaoComPontos[]>([]);
   const [loading, setLoading] = useState(true);
   const [equipamentoFiltro, setEquipamentoFiltro] = useState<
     Equipamento | undefined
   >(equipamentoInicial);
 
-  const carregar = useCallback(async () => {
+  const carregar = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
-      const data = await calibracaoService.listarBaterias(equipamentoFiltro);
+      const data = await calibracaoService.listarBaterias(equipamentoFiltro, signal);
       setBaterias(data);
-    } catch {
+    } catch (err) {
+      if ((err as { code?: string })?.code === "ERR_CANCELED") return;
       showError("Erro ao carregar baterias de calibração.");
     } finally {
       setLoading(false);
@@ -33,7 +34,9 @@ export function useCalibracao(equipamentoInicial?: Equipamento) {
   }, [equipamentoFiltro, showError]);
 
   useEffect(() => {
-    carregar();
+    const controller = new AbortController();
+    void carregar(controller.signal);
+    return () => controller.abort();
   }, [carregar]);
 
   const criarBateria = useCallback(
@@ -68,11 +71,11 @@ export function useCalibracao(equipamentoInicial?: Equipamento) {
         await calibracaoService.removerBateria(id);
         showSuccess("Bateria removida.");
         await carregar();
-      } catch {
-        showError("Erro ao remover bateria.");
+      } catch (err) {
+        showApiError(err);
       }
     },
-    [carregar, showError, showSuccess],
+    [carregar, showApiError, showError, showSuccess],
   );
 
   return {

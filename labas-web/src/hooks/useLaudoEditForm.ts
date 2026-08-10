@@ -37,7 +37,7 @@ export function useLaudoEditForm(laudo?: Laudo) {
   useEffect(() => {
     if (!laudo) return;
     form.reset(buildDefaultValues(laudo));
-  }, [laudo, form]);
+  }, [laudo]); // eslint-disable-line react-hooks/exhaustive-deps -- form é referência estável do RHF
 
   const onSubmit = form.handleSubmit(async (data) => {
     if (!laudo) return;

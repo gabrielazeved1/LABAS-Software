@@ -16,13 +16,14 @@ export function useDashboardLaudos(): UseDashboardLaudosResult {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  const carregar = useCallback(async () => {
+  const carregar = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setErro(null);
     try {
-      const data = await dashboardService.buscarLaudosRecentes();
+      const data = await dashboardService.buscarLaudosRecentes(signal);
       setLaudos(data);
     } catch (err) {
+      if ((err as { code?: string })?.code === "ERR_CANCELED") return;
       setErro("Não foi possível carregar os laudos recentes.");
       showApiError(err);
     } finally {
@@ -31,7 +32,9 @@ export function useDashboardLaudos(): UseDashboardLaudosResult {
   }, [showApiError]);
 
   useEffect(() => {
-    void carregar();
+    const controller = new AbortController();
+    void carregar(controller.signal);
+    return () => controller.abort();
   }, [carregar]);
 
   return { laudos, loading, erro, recarregar: carregar };

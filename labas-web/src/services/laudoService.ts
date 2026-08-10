@@ -4,9 +4,10 @@ import type { Laudo, LaudoPayload, PaginatedResponse } from "../types/analise";
 const BASE = "/laudos/";
 
 export const laudoService = {
-  async listar(page?: number): Promise<PaginatedResponse<Laudo>> {
+  async listar(page?: number, signal?: AbortSignal): Promise<PaginatedResponse<Laudo>> {
     const { data } = await api.get(BASE, {
       params: page ? { page } : undefined,
+      signal,
     });
     if (Array.isArray(data)) {
       return { count: data.length, next: null, previous: null, results: data };
@@ -14,8 +15,8 @@ export const laudoService = {
     return data as PaginatedResponse<Laudo>;
   },
 
-  async buscar(id: number): Promise<Laudo> {
-    const { data } = await api.get<Laudo>(`${BASE}${id}/`);
+  async buscar(id: number, signal?: AbortSignal): Promise<Laudo> {
+    const { data } = await api.get<Laudo>(`${BASE}${id}/`, { signal });
     return data;
   },
 

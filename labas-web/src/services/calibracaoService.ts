@@ -38,9 +38,10 @@ export const calibracaoService = {
   /** Lista baterias. Filtra por equipamento quando fornecido. Garante array mesmo com paginação DRF. */
   async listarBaterias(
     equipamento?: Equipamento,
+    signal?: AbortSignal,
   ): Promise<BateriaCalibracaoComPontos[]> {
     const params = equipamento ? { equipamento } : {};
-    const { data } = await api.get(BASE, { params });
+    const { data } = await api.get(BASE, { params, signal });
     // Se vier paginado, retorna data.results, senão data
     return Array.isArray(data) ? data : (data.results ?? []);
   },
@@ -54,8 +55,8 @@ export const calibracaoService = {
   },
 
   /** Busca detalhe de uma bateria com seus pontos aninhados. */
-  async buscarBateria(id: number): Promise<BateriaCalibracaoComPontos> {
-    const { data } = await api.get<BateriaCalibracaoComPontos>(`${BASE}${id}/`);
+  async buscarBateria(id: number, signal?: AbortSignal): Promise<BateriaCalibracaoComPontos> {
+    const { data } = await api.get<BateriaCalibracaoComPontos>(`${BASE}${id}/`, { signal });
     return data;
   },
 

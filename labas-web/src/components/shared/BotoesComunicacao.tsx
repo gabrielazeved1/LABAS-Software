@@ -18,7 +18,7 @@ export function BotoesComunicacao({
   clienteTelefone,
 }: BotoesComunicacaoProps) {
   const [isEmailLoading, setIsEmailLoading] = useState(false);
-  const { showSuccess, showError, showWarning } = useSnackbar();
+  const { showSuccess, showApiError, showWarning } = useSnackbar();
 
   const handleWhatsApp = () => {
     if (!clienteTelefone) {
@@ -39,9 +39,7 @@ export function BotoesComunicacao({
       await laudoService.enviarPorEmail(laudoId);
       showSuccess("E-mail enviado com sucesso para o cliente!");
     } catch (error) {
-      showError(
-        "Erro ao enviar o e-mail. Verifique se o cliente possui um e-mail válido.",
-      );
+      showApiError(error);
     } finally {
       setIsEmailLoading(false);
     }

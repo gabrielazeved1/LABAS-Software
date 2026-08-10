@@ -30,7 +30,6 @@ from .serializers import (
     AnaliseSoloSerializer,
     ClienteCadastroSerializer,
     LaudoSerializer,
-    UserRegistrationSerializer,
     TecnicoSerializer,
     TecnicoCriarSerializer,
     BateriaCalibracaoSerializer,
@@ -51,12 +50,11 @@ from src.application.services.email_service import EmailService
 # Controlador para registro de novos usuarios no sistema
 class RegisterUserView(generics.CreateAPIView):
     """
-    Interface para auto cadastro de produtores rurais
-    Garante que o acesso seja publico para novos utilizadores
+    Cadastro de novos tecnicos. Restrito a tecnicos autenticados (staff only).
     """
 
-    serializer_class = UserRegistrationSerializer
-    permission_classes = [AllowAny]
+    serializer_class = TecnicoCriarSerializer
+    permission_classes = [IsAuthenticated, IsStaff]
 
     def create(self, request, *args, **kwargs):
         # Executa a validacao e persistencia via serializer
@@ -285,9 +283,11 @@ class BateriaCalibracaoListCreateView(generics.ListCreateAPIView):
         return [IsAuthenticated(), IsAdminUser()]
 
     def get_queryset(self):
-        qs = BateriaCalibracao.objects.prefetch_related("pontos").order_by(
-            "-data_criacao"
-        )
+        from django.db.models import Count
+
+        qs = BateriaCalibracao.objects.prefetch_related("pontos").annotate(
+            leituras_count=Count("leituras")
+        ).order_by("-data_criacao")
         equipamento = self.request.query_params.get("equipamento")
         elemento = self.request.query_params.get("elemento")
         ativo = self.request.query_params.get("ativo")
@@ -308,8 +308,13 @@ class BateriaCalibracaoDetailView(generics.RetrieveUpdateDestroyAPIView):
     DELETE /api/baterias/{id}/   -> Remove bateria
     """
 
-    queryset = BateriaCalibracao.objects.prefetch_related("pontos").all()
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        from django.db.models import Count
+        return BateriaCalibracao.objects.prefetch_related("pontos").annotate(
+            leituras_count=Count("leituras")
+        )
 
     def get_permissions(self):
         from rest_framework.permissions import IsAdminUser
@@ -328,6 +333,22 @@ class BateriaCalibracaoDetailView(generics.RetrieveUpdateDestroyAPIView):
     def partial_update(self, request, *args, **kwargs):
         kwargs["partial"] = True
         return self.update(request, *args, **kwargs)
+
+    def perform_destroy(self, instance):
+        from django.db.models import ProtectedError
+        from rest_framework.exceptions import ValidationError as DRFValidationError
+
+        try:
+            instance.delete()
+        except ProtectedError:
+            raise DRFValidationError(
+                {
+                    "detail": (
+                        "Esta bateria possui leituras registradas e não pode ser removida. "
+                        "Remova as leituras antes de excluir a bateria."
+                    )
+                }
+            )
 
 
 class PontoCalibracaoCreateView(generics.CreateAPIView):
@@ -397,7 +418,7 @@ class AmostrasPendentesListView(generics.ListAPIView):
                 elemento=elemento,
                 ativo=True,
             )
-        except BateriaCalibracao.DoesNotExist:
+        except (BateriaCalibracao.DoesNotExist, BateriaCalibracao.MultipleObjectsReturned):
             return AnaliseSolo.objects.none()
 
         # Exclui amostras que ja possuem leitura registrada para esta bateria ativa
@@ -407,6 +428,7 @@ class AmostrasPendentesListView(generics.ListAPIView):
 
         return (
             AnaliseSolo.objects.select_related("laudo__cliente")
+            .filter(ativo=True)
             .exclude(id__in=ids_com_leitura)
             .order_by("n_lab")
         )
@@ -577,7 +599,7 @@ class ClienteDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 6 DASHBOARD DO TÉCNICO
+# 7 DASHBOARD DO TÉCNICO
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -656,7 +678,7 @@ class EnviarLaudoEmailView(APIView):
     permission_classes = [IsAuthenticated, IsStaff]
 
     def post(self, request, pk):
-        laudo = get_object_or_404(Laudo, pk=pk)
+        laudo = get_object_or_404(Laudo.objects.select_related("cliente"), pk=pk)
 
         if not laudo.cliente.email:
             return Response(
@@ -666,15 +688,18 @@ class EnviarLaudoEmailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 1. Renderizar o HTML apenas com as análises ativas
+        # 1. Montar contexto idêntico ao gerar_laudo_pdf — template espera "paginas"
+        analises_ativas = list(laudo.analises.filter(ativo=True).order_by("n_lab")[:50])
+        paginas = [analises_ativas[i : i + 5] for i in range(0, max(len(analises_ativas), 1), 5)]
+
         html_string = render_to_string(
             "laudos/modelo_oficial.html",
-            {"laudo": laudo, "analises": laudo.analises.filter(ativo=True)},
+            {"laudo": laudo, "cliente": laudo.cliente, "paginas": paginas},
         )
 
         # 2. Geração do PDF estritamente em Buffer (Memory-Safe)
         pdf_buffer = BytesIO()
-        HTML(string=html_string).write_pdf(pdf_buffer)
+        HTML(string=html_string, base_url=request.build_absolute_uri("/")).write_pdf(pdf_buffer)
 
         # 3. Delegação de responsabilidade (SRP)
         sucesso = EmailService.enviar_laudo_cliente(laudo, pdf_buffer)

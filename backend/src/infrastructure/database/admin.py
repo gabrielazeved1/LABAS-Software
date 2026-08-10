@@ -201,6 +201,6 @@ class LeituraEquipamentoAdmin(admin.ModelAdmin):
     """
 
     list_display = ("analise", "bateria", "leitura_bruta", "fator_diluicao")
-    list_editable = ("bateria", "leitura_bruta", "fator_diluicao")
+    list_editable = ("leitura_bruta", "fator_diluicao")
     list_filter = ("bateria__elemento", "bateria__equipamento")
     search_fields = ("analise__n_lab",)

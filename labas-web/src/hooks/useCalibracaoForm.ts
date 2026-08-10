@@ -45,9 +45,8 @@ export function useCalibracaoForm(
   );
   const [submittingBateria, setSubmittingBateria] = useState(false);
 
-  const bateriaForm = useForm<BateriaForm>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(bateriaSchema) as any,
+  const bateriaForm = useForm<BateriaForm, unknown, BateriaForm>({
+    resolver: zodResolver(bateriaSchema),
     defaultValues: {
       equipamento: initialEquipamento ?? "AA",
       elemento: "",
@@ -161,13 +160,25 @@ export function useCalibracaoForm(
 
     setSalvandoPontos(true);
     try {
-      await Promise.all(
-        pontosSalvar.map((p) => calibracaoService.adicionarPonto(bateriaId, p)),
-      );
-      showSuccess("Calibração salva com sucesso.");
-      navigate("/calibracao");
-    } catch {
-      showError("Erro ao salvar pontos de calibração.");
+      // Sequencial: cada ponto dispara o signal de recálculo no backend.
+      // Em paralelo (Promise.allSettled) os signals concorriam e o último
+      // a escrever podia ser o de um ponto inicial — zerando a equação.
+      let falhas = 0;
+      for (const p of pontosSalvar) {
+        try {
+          await calibracaoService.adicionarPonto(bateriaId, p);
+        } catch {
+          falhas++;
+        }
+      }
+      if (falhas > 0) {
+        showError(
+          `${falhas} ponto(s) não puderam ser salvos. Verifique os valores e tente novamente.`,
+        );
+      } else {
+        showSuccess("Calibração salva com sucesso.");
+        navigate("/calibracao");
+      }
     } finally {
       setSalvandoPontos(false);
     }

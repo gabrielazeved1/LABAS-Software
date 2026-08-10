@@ -59,14 +59,21 @@ export default function LaudoDetalhePage() {
       setBuscando(false);
       return;
     }
-    laudoService
-      .buscar(laudoId)
-      .then(setLaudo)
-      .catch((err) => {
+    const controller = new AbortController();
+    const buscar = async () => {
+      try {
+        const data = await laudoService.buscar(laudoId, controller.signal);
+        setLaudo(data);
+      } catch (err) {
+        if ((err as { code?: string })?.code === "ERR_CANCELED") return;
         showApiError(err);
         setErroFetch(true);
-      })
-      .finally(() => setBuscando(false));
+      } finally {
+        setBuscando(false);
+      }
+    };
+    void buscar();
+    return () => controller.abort();
   }, [laudoId, showApiError]);
 
   const colunas = useMemo(
@@ -164,7 +171,10 @@ export default function LaudoDetalhePage() {
       const a = document.createElement("a");
       a.href = url;
       a.download = `laudo-${laudo.codigo_laudo}.pdf`;
+      a.style.display = "none";
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
       showApiError(err);

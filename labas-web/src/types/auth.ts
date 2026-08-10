@@ -11,20 +11,6 @@ export interface LoginPayload {
   password: string;
 }
 
-export interface RegisterPayload {
-  username: string;
-  password: string;
-  email: string;
-  nome_cliente: string;
-  codigo_cliente: string;
-  municipio?: string;
-  area?: string;
-}
-
-/** Resposta do backend ao criar conta — apenas mensagem de confirmação. */
-export interface RegisterResponse {
-  message: string;
-}
 
 export interface AuthUser {
   id: number;

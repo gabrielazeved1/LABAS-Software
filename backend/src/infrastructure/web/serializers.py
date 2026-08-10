@@ -13,39 +13,6 @@ from src.infrastructure.database.models import (
 )
 
 
-# Serializer para o processo de cadastro inicial no sistema
-class UserRegistrationSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=150)
-    password = serializers.CharField(write_only=True)
-    email = serializers.EmailField()
-    nome = serializers.CharField(max_length=255)
-
-    def validate_username(self, value):
-        if User.objects.filter(username=value).exists():
-            raise serializers.ValidationError("Este nome de usuario ja existe")
-        return value
-
-    def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("Este e-mail ja esta em uso")
-        return value
-
-    def create(self, validated_data):
-        nome_parts = validated_data["nome"].split(" ", 1)
-        first_name = nome_parts[0]
-        last_name = nome_parts[1] if len(nome_parts) > 1 else ""
-
-        user = User.objects.create_user(
-            username=validated_data["username"],
-            email=validated_data["email"],
-            password=validated_data["password"],
-            first_name=first_name,
-            last_name=last_name,
-            is_staff=True,
-        )
-        return user
-
-
 # =============================================================================
 # GESTAO DE TECNICOS (staff only)
 # =============================================================================
@@ -195,31 +162,22 @@ class AnaliseSoloSerializer(serializers.ModelSerializer):
     n_lab = serializers.CharField(
         validators=[
             RegexValidator(
-                regex=r"^\d{4}/.+$",
-                message="O padrao do N Lab deve ser ANO/NUMERO ex 2026/001",
+                regex=r"^\d{4}/\d{3,}$",
+                message="O padrão do N Lab deve ser ANO/NUMERO, ex: 2026/001",
             ),
         ]
     )
 
-    def validate(self, data):
-        """Valida unicidade global de n_lab — um n_lab só pode existir em um único laudo."""
-        n_lab = data.get("n_lab", getattr(self.instance, "n_lab", None))
-        if n_lab:
-            qs = AnaliseSolo.objects.filter(n_lab=n_lab)
-            if self.instance:
-                qs = qs.exclude(pk=self.instance.pk)
-            if qs.exists():
-                existente = qs.select_related("laudo").first()
-                raise serializers.ValidationError(
-                    {
-                        "n_lab": (
-                            f"N_Lab '{n_lab}' já está cadastrado no laudo "
-                            f"{existente.laudo.codigo_laudo}. "
-                            "Cada amostra só pode pertencer a um único laudo."
-                        )
-                    }
-                )
-        return data
+    def validate_n_lab(self, value):
+        """N_Lab é o número de protocolo único da amostra no laboratório — nunca se repete."""
+        qs = AnaliseSolo.objects.filter(n_lab=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError(
+                f"Já existe uma amostra com N_Lab '{value}' cadastrada no sistema."
+            )
+        return value
 
     class Meta:
         model = AnaliseSolo
@@ -287,7 +245,7 @@ class PontoCalibracaoSerializer(serializers.ModelSerializer):
     class Meta:
         model = PontoCalibracao
         fields = ["id", "bateria", "concentracao", "absorvancia"]
-        read_only_fields = ["id"]
+        read_only_fields = ["id", "bateria"]
 
 
 class BateriaCalibracaoSerializer(serializers.ModelSerializer):
@@ -295,6 +253,7 @@ class BateriaCalibracaoSerializer(serializers.ModelSerializer):
 
     pontos = PontoCalibracaoSerializer(many=True, read_only=True)
     equacao_formada = serializers.CharField(read_only=True)
+    leituras_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = BateriaCalibracao
@@ -311,6 +270,7 @@ class BateriaCalibracaoSerializer(serializers.ModelSerializer):
             "leitura_branco",
             "ativo",
             "equacao_formada",
+            "leituras_count",
             "pontos",
         ]
         read_only_fields = [
@@ -323,9 +283,15 @@ class BateriaCalibracaoSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, attrs):
-        """Delega validacao estequiometrica ao metodo clean() do model."""
-        instance = BateriaCalibracao(**attrs)
-        instance.clean()
+        """Delega validação estequiométrica ao clean() do model."""
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        instance = self.instance or BateriaCalibracao()
+        for k, v in attrs.items():
+            setattr(instance, k, v)
+        try:
+            instance.clean()
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(e.message_dict)
         return attrs
 
 
