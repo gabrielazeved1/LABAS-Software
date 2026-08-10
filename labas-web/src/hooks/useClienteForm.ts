@@ -65,7 +65,22 @@ export function useClienteForm({
         }
         onSucesso?.(salvo);
       } catch (err) {
-        showApiError(err);
+        const data = (err as { response?: { data?: Record<string, unknown> } })
+          ?.response?.data;
+        if (data && typeof data === "object" && !Array.isArray(data)) {
+          const currentValues = form.getValues();
+          let hasFieldError = false;
+          for (const [field, msgs] of Object.entries(data)) {
+            if (field !== "detail" && field in currentValues) {
+              const msg = Array.isArray(msgs) ? String(msgs[0]) : String(msgs);
+              form.setError(field as keyof ClienteSchemaInput, { message: msg });
+              hasFieldError = true;
+            }
+          }
+          if (!hasFieldError) showApiError(err);
+        } else {
+          showApiError(err);
+        }
       } finally {
         setLoading(false);
       }

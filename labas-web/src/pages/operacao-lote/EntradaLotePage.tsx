@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   Alert,
   Box,
@@ -48,9 +49,9 @@ const STATUS_CHIP: Record<
 export default function EntradaLotePage() {
   const {
     equipamento,
-    setEquipamento,
+    handleSetEquipamento,
     elemento,
-    setElemento,
+    handleSetElemento,
     bateriaAtiva,
     jaFiltrou,
     linhas,
@@ -74,7 +75,7 @@ export default function EntradaLotePage() {
 
   // ─── colunas do DataGrid ──────────────────────────────────────────────────
 
-  const columns: GridColDef<LinhaBancada>[] = [
+  const columns = useMemo<GridColDef<LinhaBancada>[]>(() => [
     {
       field: "n_lab",
       headerName: "N. Lab",
@@ -160,7 +161,7 @@ export default function EntradaLotePage() {
         );
       },
     },
-  ];
+  ], [exibirFator, leituraLabel, salvando]);
 
   // ─── painel da curva ──────────────────────────────────────────────────────
 
@@ -185,8 +186,8 @@ export default function EntradaLotePage() {
     ) {
       return (
         <Alert severity="error" sx={{ mb: 2 }}>
-          A curva ativa nao corresponde ao elemento selecionado. Ative a bateria
-          correta em <strong>Calibracao</strong>.
+          A curva ativa não corresponde ao elemento selecionado. Ative a bateria
+          correta em <strong>Calibração</strong>.
         </Alert>
       );
     }
@@ -199,7 +200,7 @@ export default function EntradaLotePage() {
       return (
         <Alert severity="error" sx={{ mb: 2 }}>
           {equipamento === "AA" ? (
-            <>Nao ha reta ativa na absorcao atomica.</>
+            <>Não há reta ativa na Absorção Atômica.</>
           ) : (
             <>
               Nenhuma bateria ativa para{" "}
@@ -207,7 +208,7 @@ export default function EntradaLotePage() {
               <strong>{equipamentoLabel}</strong>.
             </>
           )}{" "}
-          Acesse <strong>Calibracao</strong> para ativar uma bateria.
+          Acesse <strong>Calibração</strong> para ativar uma bateria.
         </Alert>
       );
     }
@@ -220,14 +221,14 @@ export default function EntradaLotePage() {
       return (
         <Alert severity="warning" sx={{ mb: 2 }}>
           {equipamento === "AA" ? (
-            <>Nao ha reta ativa na absorcao atomica.</>
+            <>Não há reta ativa na Absorção Atômica.</>
           ) : (
             <>
-              Bateria ativa encontrada, mas a curva de calibracao ainda nao esta
+              Bateria ativa encontrada, mas a curva de calibração ainda não está
               calculada.
             </>
           )}{" "}
-          Adicione pelo menos 2 pontos em <strong>Calibracao</strong>.
+          Adicione pelo menos 2 pontos em <strong>Calibração</strong>.
         </Alert>
       );
     }
@@ -275,8 +276,7 @@ export default function EntradaLotePage() {
             label="Equipamento"
             value={equipamento}
             onChange={(e) => {
-              setEquipamento(e.target.value as Equipamento);
-              setElemento("");
+              handleSetEquipamento(e.target.value as Equipamento);
             }}
           >
             {EQUIPAMENTOS.map((eq) => (
@@ -297,7 +297,7 @@ export default function EntradaLotePage() {
             labelId="el-label"
             label="Elemento"
             value={elemento}
-            onChange={(e) => setElemento(e.target.value as Elemento)}
+            onChange={(e) => handleSetElemento(e.target.value as Elemento)}
           >
             {elementosDisponiveis.map((el) => (
               <MenuItem key={el} value={el}>

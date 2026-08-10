@@ -27,6 +27,7 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import PageHeader from "../../components/shared/PageHeader";
+import { GraficoCalibracao } from "../../components/calibracao/GraficoCalibracao";
 import { useBateriaDetalhe } from "../../hooks/useBateriaDetalhe";
 import { useCalibracaoForm } from "../../hooks/useCalibracaoForm";
 import {
@@ -105,6 +106,8 @@ export default function CalibracaoFormPage() {
     if (!isEdicao) {
       bateriaForm.resetField("elemento");
     }
+    // isEdicao deriva de bateriaId (useParams) — estável durante todo o ciclo de vida
+    // do componente; não muda sem navegação. bateriaForm é referência estável do RHF.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [equipamento]);
 
@@ -211,7 +214,7 @@ export default function CalibracaoFormPage() {
                   type="text"
                   inputProps={{
                     inputMode: "decimal",
-                    pattern: "[0-9]*[.,]?[0-9]*",
+                    pattern: "-?[0-9]*[.,]?[0-9]*",
                   }}
                   {...bateriaForm.register("leitura_branco", {
                     setValueAs: (value) =>
@@ -271,7 +274,7 @@ export default function CalibracaoFormPage() {
               {isEdicao && bateria && (
                 <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
                   <Typography variant="subtitle2" mb={2}>
-                    Parametros da bateria
+                    Parâmetros da bateria
                   </Typography>
                   <Stack spacing={2}>
                     {REQUER_VOLUMES.includes(equipamento) && (
@@ -318,7 +321,7 @@ export default function CalibracaoFormPage() {
                         type="text"
                         inputProps={{
                           inputMode: "decimal",
-                          pattern: "[0-9]*[.,]?[0-9]*",
+                          pattern: "-?[0-9]*[.,]?[0-9]*",
                         }}
                         value={parametros.leitura_branco}
                         onChange={(e) =>
@@ -356,7 +359,7 @@ export default function CalibracaoFormPage() {
                         ) : null
                       }
                     >
-                      {salvandoParametros ? "Salvando..." : "Salvar parametros"}
+                      {salvandoParametros ? "Salvando..." : "Salvar parâmetros"}
                     </Button>
                   </Stack>
                 </Paper>
@@ -448,6 +451,19 @@ export default function CalibracaoFormPage() {
                       ))}
                     </TableBody>
                   </Table>
+                  {bateria.coeficiente_angular_a !== null && (
+                    <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+                      <GraficoCalibracao
+                        pontos={bateria.pontos}
+                        a={bateria.coeficiente_angular_a}
+                        b={bateria.coeficiente_linear_b}
+                        r2={bateria.r_quadrado}
+                        equacao={bateria.equacao_formada}
+                        leituraLabel={leituraLabel}
+                      />
+                    </Paper>
+                  )}
+
                   <Divider sx={{ mb: 3 }} />
                 </>
               )}

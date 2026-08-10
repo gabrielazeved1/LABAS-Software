@@ -21,12 +21,13 @@ export function useLaudos(): UseLaudosResult {
   const [loading, setLoading] = useState(true);
   const [deletando, setDeletando] = useState<number | null>(null);
 
-  const carregar = useCallback(async () => {
+  const carregar = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
-      const response = await laudoService.listar();
+      const response = await laudoService.listar(undefined, signal);
       setLaudos(response.results);
     } catch (err) {
+      if ((err as { code?: string })?.code === "ERR_CANCELED") return;
       showApiError(err);
     } finally {
       setLoading(false);
@@ -34,7 +35,9 @@ export function useLaudos(): UseLaudosResult {
   }, [showApiError]);
 
   useEffect(() => {
-    void carregar();
+    const controller = new AbortController();
+    void carregar(controller.signal);
+    return () => controller.abort();
   }, [carregar]);
 
   const baixarPdf = useCallback(

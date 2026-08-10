@@ -1,25 +1,19 @@
+import logging
 from django.apps import AppConfig
+
+logger = logging.getLogger(__name__)
 
 
 class DatabaseConfig(AppConfig):
-    """
-    configuracao do App para a camada de infraestrutura de BD
-    """
-
     default_auto_field = "django.db.models.BigAutoField"
-
-    # deve corresponder ao caminho completo devido a estrutura de pastas personalizada
     name = "src.infrastructure.database"
-
-    # nome de exibicao no django Admin
     verbose_name = "Banco de Dados (LABAS)"
 
     def ready(self):
-        # Este print deve aparecer no terminal assim que você rodar o runserver
-        print("✅ [SISTEMA] App de Banco de Dados carregado com sucesso!")
+        logger.info("[SISTEMA] App de Banco de Dados carregado com sucesso.")
         try:
-            import src.infrastructure.database.signals
+            import src.infrastructure.database.signals  # noqa: F401
 
-            print("✅ [SISTEMA] Sinais de automação registrados!")
+            logger.info("[SISTEMA] Sinais de automacao registrados.")
         except ImportError as e:
-            print(f"❌ [ERRO] Falha ao carregar sinais: {e}")
+            logger.error("[SISTEMA] Falha ao carregar sinais: %s", e)

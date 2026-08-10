@@ -16,13 +16,14 @@ export function useDashboardStats(): UseDashboardStatsResult {
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  const carregar = useCallback(async () => {
+  const carregar = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setErro(null);
     try {
-      const data = await dashboardService.buscarStats();
+      const data = await dashboardService.buscarStats(signal);
       setStats(data);
     } catch (err) {
+      if ((err as { code?: string })?.code === "ERR_CANCELED") return;
       setErro("Não foi possível carregar os indicadores.");
       showApiError(err);
     } finally {
@@ -31,7 +32,9 @@ export function useDashboardStats(): UseDashboardStatsResult {
   }, [showApiError]);
 
   useEffect(() => {
-    void carregar();
+    const controller = new AbortController();
+    void carregar(controller.signal);
+    return () => controller.abort();
   }, [carregar]);
 
   return { stats, loading, erro, recarregar: carregar };

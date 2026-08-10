@@ -194,15 +194,24 @@ export default function CalibracaoListPage() {
                       <TuneIcon fontSize="small" />
                     </IconButton>
                   </Tooltip>
-                  <Tooltip title="Remover bateria">
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => setConfirmarRemocaoId(bateria.id)}
-                      aria-label={`Remover bateria ${bateria.id}`}
-                    >
-                      <DeleteOutlineIcon fontSize="small" />
-                    </IconButton>
+                  <Tooltip
+                    title={
+                      bateria.leituras_count > 0
+                        ? `Possui ${bateria.leituras_count} leitura(s) vinculada(s). Use o toggle para desativar.`
+                        : "Remover bateria"
+                    }
+                  >
+                    <span>
+                      <IconButton
+                        size="small"
+                        color="error"
+                        disabled={bateria.leituras_count > 0}
+                        onClick={() => setConfirmarRemocaoId(bateria.id)}
+                        aria-label={`Remover bateria ${bateria.id}`}
+                      >
+                        <DeleteOutlineIcon fontSize="small" />
+                      </IconButton>
+                    </span>
                   </Tooltip>
                 </TableCell>
               </TableRow>

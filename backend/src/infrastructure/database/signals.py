@@ -46,12 +46,16 @@ def atualizar_equacao_da_bateria(sender, instance, **kwargs):
     Sempre que um ponto e adicionado, alterado ou removido,
     recalcula a equacao da reta para o equipamento correspondente.
     """
-    bateria = instance.bateria
+    try:
+        bateria = BateriaCalibracao.objects.get(pk=instance.bateria_id)
+    except BateriaCalibracao.DoesNotExist:
+        # Bateria foi deletada em cascata — não há nada a recalcular
+        return
     pontos = bateria.pontos.all()
 
     if pontos.count() >= 2:
         x_padroes = [p.concentracao for p in pontos]
-        print(
+        logger.debug(
             "[CURVA DEBUG] Bateria %s (%s/%s) pontos=%s",
             bateria.id,
             bateria.equipamento,
@@ -111,14 +115,6 @@ def atualizar_equacao_da_bateria(sender, instance, **kwargs):
                 len(x_padroes),
                 e,
             )
-            print(
-                "[ERRO CURVA] Bateria %s (%s/%s) com %s pontos: %s",
-                bateria.id,
-                bateria.equipamento,
-                bateria.elemento,
-                len(x_padroes),
-                e,
-            )
             # Invalida a curva para que a UI exiba aviso correto
             bateria.coeficiente_angular_a = None
             bateria.coeficiente_linear_b = None
@@ -145,7 +141,7 @@ def atualizar_equacao_da_bateria(sender, instance, **kwargs):
 
 
 # =============================================================================
-# 2. CALCULOS AGRONOMICOS DO LAUDO
+# 3. CALCULOS AGRONOMICOS DO LAUDO
 # =============================================================================
 
 
@@ -185,7 +181,7 @@ def calcular_relacoes_agronomicas(sender, instance, **kwargs):
 
 
 # =============================================================================
-# 3. ROBO DE PROCESSAMENTO E INTEGRACAO DE EQUIPAMENTOS
+# 4. ROBO DE PROCESSAMENTO E INTEGRACAO DE EQUIPAMENTOS
 # =============================================================================
 
 
@@ -207,18 +203,20 @@ def automatizar_calculo_equipamentos(sender, instance, created, **kwargs):
     diluicao = instance.fator_diluicao
 
     # [BLOQUEIO GLOBAL] TRAVA NO BACK-END PARA EQUIPAMENTOS DE EXTRACAO
-    if bateria.equipamento in ["AA", "FC", "ES"]:
+    # MO usa formula fixa sem volumes — excluida do gatekeeper de estequiometria
+    if bateria.equipamento in ["AA", "FC", "ES"] and bateria.elemento != "MO":
         if vol_solo is None or vol_extrator is None or diluicao is None:
-            print(
-                f"[FALHA DE PROCESSAMENTO] Impossivel calcular {bateria.elemento}. "
-                "V-Solo, V-Extrator ou Diluicao ausentes na configuracao da bateria."
+            logger.warning(
+                "[FALHA DE PROCESSAMENTO] Impossivel calcular %s. "
+                "V-Solo, V-Extrator ou Diluicao ausentes na configuracao da bateria.",
+                bateria.elemento,
             )
             return
 
     # [BLOCO TI] TITULACAO (Aluminio e Acidez Potencial)
     if bateria.equipamento == "TI":
         if bateria.leitura_branco is None:
-            print("[BLOQUEIO TI] Leitura do Branco ausente para o lote de Titulacao.")
+            logger.warning("[BLOQUEIO TI] Leitura do Branco ausente para o lote de Titulacao.")
             return
 
         maquina_ti = CalculadoraTitulacao()
@@ -234,32 +232,29 @@ def automatizar_calculo_equipamentos(sender, instance, created, **kwargs):
                 )
                 campo_laudo = "h_al"
         except Exception as e:
-            print(f"[ERRO TI] Falha no calculo volumetrico: {e}")
+            logger.error("[ERRO TI] Falha no calculo volumetrico: %s", e)
 
     # [BLOCO PH] PHMETRO
     elif bateria.equipamento == "PH":
         maquina_ph = LeitorPHmetro()
-        if "ph_agua" in bateria.elemento:
-            resultado, campo_laudo = (
-                maquina_ph.registrar_leituras(ph_agua=instance.leitura_bruta).get(
-                    "ph_agua"
-                ),
-                "ph_agua",
-            )
-        elif "ph_cacl2" in bateria.elemento:
-            resultado, campo_laudo = (
-                maquina_ph.registrar_leituras(ph_cacl2=instance.leitura_bruta).get(
-                    "ph_cacl2"
-                ),
-                "ph_cacl2",
-            )
-        elif "ph_kcl" in bateria.elemento:
-            resultado, campo_laudo = (
-                maquina_ph.registrar_leituras(ph_kcl=instance.leitura_bruta).get(
-                    "ph_kcl"
-                ),
-                "ph_kcl",
-            )
+        try:
+            if "ph_agua" in bateria.elemento:
+                resultado, campo_laudo = (
+                    maquina_ph.registrar_leituras(ph_agua=instance.leitura_bruta).get("ph_agua"),
+                    "ph_agua",
+                )
+            elif "ph_cacl2" in bateria.elemento:
+                resultado, campo_laudo = (
+                    maquina_ph.registrar_leituras(ph_cacl2=instance.leitura_bruta).get("ph_cacl2"),
+                    "ph_cacl2",
+                )
+            elif "ph_kcl" in bateria.elemento:
+                resultado, campo_laudo = (
+                    maquina_ph.registrar_leituras(ph_kcl=instance.leitura_bruta).get("ph_kcl"),
+                    "ph_kcl",
+                )
+        except ValueError as e:
+            logger.warning("[PH] Leitura invalida para %s | Valor %s: %s", bateria.elemento, instance.leitura_bruta, e)
 
     # [BLOCO ES] ESPECTROFOTOMETRO
     elif bateria.equipamento == "ES":
@@ -326,38 +321,54 @@ def automatizar_calculo_equipamentos(sender, instance, created, **kwargs):
         bateria.equipamento == "AA"
         and bateria.leitura_branco is not None
         and bateria.coeficiente_angular_a is not None
+        and bateria.coeficiente_linear_b is not None
     ):
         maquina_aa = CalculadoraAbsorcaoAtomica()
         elem = bateria.elemento.lower()
-        if hasattr(maquina_aa, f"calcular_{elem}_disponivel"):
-            resultado, campo_laudo = (
-                getattr(maquina_aa, f"calcular_{elem}_disponivel")(
-                    instance.leitura_bruta,
-                    bateria.leitura_branco,
-                    bateria.coeficiente_angular_a,
-                    bateria.coeficiente_linear_b,
-                    vol_extrator,
-                    diluicao,
-                    vol_solo,
-                ),
-                elem,
-            )
+        metodo_aa = f"calcular_{elem}_disponivel"
+        if hasattr(maquina_aa, metodo_aa):
+            try:
+                resultado, campo_laudo = (
+                    getattr(maquina_aa, metodo_aa)(
+                        instance.leitura_bruta,
+                        bateria.leitura_branco,
+                        bateria.coeficiente_angular_a,
+                        bateria.coeficiente_linear_b,
+                        vol_extrator,
+                        diluicao,
+                        vol_solo,
+                    ),
+                    elem,
+                )
+            except Exception as e:
+                logger.error("[ERRO AA] Elemento %s | Leitura %s: %s", elem, instance.leitura_bruta, e)
 
     # [BLOCO FC] FOTOMETRO DE CHAMA
-    elif bateria.equipamento == "FC" and bateria.coeficiente_angular_a is not None:
+    elif (
+        bateria.equipamento == "FC"
+        and bateria.coeficiente_angular_a is not None
+        and bateria.coeficiente_linear_b is not None
+    ):
         maquina_fc = CalculadoraFotometroChama()
         elem = bateria.elemento.lower()
-        resultado, campo_laudo = (
-            getattr(maquina_fc, f"calcular_{elem}_disponivel")(
-                instance.leitura_bruta,
-                bateria.coeficiente_angular_a,
-                bateria.coeficiente_linear_b,
-                vol_extrator,
-                diluicao,
-                vol_solo,
-            ),
-            elem,
-        )
+        metodo_fc = f"calcular_{elem}_disponivel"
+        if hasattr(maquina_fc, metodo_fc):
+            try:
+                resultado, campo_laudo = (
+                    getattr(maquina_fc, metodo_fc)(
+                        instance.leitura_bruta,
+                        bateria.coeficiente_angular_a,
+                        bateria.coeficiente_linear_b,
+                        vol_extrator,
+                        diluicao,
+                        vol_solo,
+                    ),
+                    elem,
+                )
+            except Exception as e:
+                logger.error("[ERRO FC] Elemento %s | Leitura %s: %s", elem, instance.leitura_bruta, e)
+        else:
+            logger.error("[FC] Elemento '%s' sem método de cálculo implementado.", elem)
 
     # [SALVAMENTO] ATUALIZACAO DO LAUDO
     if resultado is not None and campo_laudo is not None:

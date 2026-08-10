@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   Box,
@@ -54,6 +54,22 @@ function TabBancada({ leituras, salvando, onCorrigir }: TabBancadaProps) {
       ]),
     ),
   );
+
+  // Sincroniza os inputs quando o backend recalcula e leituras é atualizado
+  useEffect(() => {
+    setValores(
+      Object.fromEntries(
+        leituras.map((l) => [
+          l.id,
+          {
+            leitura_bruta: String(l.leitura_bruta),
+            fator_diluicao:
+              l.fator_diluicao != null ? String(l.fator_diluicao) : "",
+          },
+        ]),
+      ),
+    );
+  }, [leituras]);
 
   if (leituras.length === 0) {
     return (

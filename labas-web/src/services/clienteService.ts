@@ -4,11 +4,12 @@ import type { Cliente, ClientePayload } from "../types/cliente";
 
 export const clienteService = {
   /** Lista clientes. Suporta filtro por ?search= (nome ou código). */
-  listar: async (search?: string): Promise<Cliente[]> => {
+  listar: async (search?: string, signal?: AbortSignal): Promise<Cliente[]> => {
     const { data } = await api.get<Cliente[] | { results: Cliente[] }>(
       "/clientes/",
       {
         params: search ? { search } : undefined,
+        signal,
       },
     );
     return Array.isArray(data) ? data : data.results;

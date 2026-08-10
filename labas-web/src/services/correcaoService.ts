@@ -3,9 +3,10 @@ import type { LeituraDetalhe, LeituraCorrecaoPayload } from "../types/analise";
 
 export const correcaoService = {
   /** Lista todas as leituras brutas registradas para uma AnaliseSolo. */
-  async listarLeituras(analiseId: number): Promise<LeituraDetalhe[]> {
+  async listarLeituras(analiseId: number, signal?: AbortSignal): Promise<LeituraDetalhe[]> {
     const { data } = await api.get<LeituraDetalhe[]>(
       `/analises/${analiseId}/leituras/`,
+      { signal },
     );
     return data;
   },

@@ -1,5 +1,5 @@
 // src/contexts/SnackbarContext.tsx
-import { createContext, useCallback, useState, type ReactNode } from "react";
+import { createContext, useCallback, useEffect, useState, type ReactNode } from "react";
 import Snackbar from "@mui/material/Snackbar";
 import Alert from "@mui/material/Alert";
 
@@ -8,12 +8,6 @@ import Alert from "@mui/material/Alert";
 // ---------------------------------------------------------------------------
 
 type Severity = "success" | "error" | "warning" | "info";
-
-interface SnackbarState {
-  open: boolean;
-  message: string;
-  severity: Severity;
-}
 
 export interface SnackbarContextValue {
   /** Exibe uma mensagem de sucesso */
@@ -48,15 +42,24 @@ export const SnackbarContext = createContext<SnackbarContextValue | null>(null);
 
 const AUTO_HIDE_MS = 4000;
 
+type QueueItem = { message: string; severity: Severity };
+
 export function SnackbarProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<SnackbarState>({
-    open: false,
-    message: "",
-    severity: "info",
-  });
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [current, setCurrent] = useState<QueueItem | null>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (!open && queue.length > 0) {
+      const [next, ...rest] = queue;
+      setCurrent(next);
+      setQueue(rest);
+      setOpen(true);
+    }
+  }, [open, queue]);
 
   const show = useCallback((message: string, severity: Severity) => {
-    setState({ open: true, message, severity });
+    setQueue((prev) => [...prev, { message, severity }]);
   }, []);
 
   const showSuccess = useCallback(
@@ -114,7 +117,10 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
     [show],
   );
 
-  const handleClose = () => setState((prev) => ({ ...prev, open: false }));
+  const handleClose = (_: unknown, reason?: string) => {
+    if (reason === "clickaway") return;
+    setOpen(false);
+  };
 
   return (
     <SnackbarContext.Provider
@@ -123,18 +129,18 @@ export function SnackbarProvider({ children }: { children: ReactNode }) {
       {children}
 
       <Snackbar
-        open={state.open}
+        open={open}
         autoHideDuration={AUTO_HIDE_MS}
         onClose={handleClose}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
         <Alert
-          onClose={handleClose}
-          severity={state.severity}
+          onClose={() => setOpen(false)}
+          severity={current?.severity ?? "info"}
           variant="filled"
           sx={{ width: "100%" }}
         >
-          {state.message}
+          {current?.message}
         </Alert>
       </Snackbar>
     </SnackbarContext.Provider>

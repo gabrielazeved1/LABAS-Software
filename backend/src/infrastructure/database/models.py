@@ -12,7 +12,7 @@ class Cliente(models.Model):
     """
 
     nome = models.CharField(max_length=255, verbose_name="Solicitante")
-    codigo = models.CharField(max_length=50, unique=True, verbose_name="Codigo Cliente")
+    codigo = models.CharField(max_length=50, unique=True, verbose_name="Codigo")
     telefone = models.CharField(
         max_length=20, blank=True, null=True, verbose_name="Telefone"
     )

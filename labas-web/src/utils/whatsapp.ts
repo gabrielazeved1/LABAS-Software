@@ -17,6 +17,6 @@ export const gerarLinkWhatsApp = (
   // Codifica a string para o formato de URL (substituindo espaços por %20, etc.)
   const mensagemCodificada = encodeURIComponent(mensagem);
 
-  // Assume o DDI 55 (Brasil) por padrão
+  // DDI 55 (Brasil) fixo — sistema restrito à operação nacional da UFU
   return `https://wa.me/55${numeroLimpo}?text=${mensagemCodificada}`;
 };

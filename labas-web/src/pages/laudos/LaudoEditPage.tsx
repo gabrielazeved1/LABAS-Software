@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controller } from "react-hook-form";
 import {
   Alert,
@@ -63,6 +63,7 @@ export default function LaudoEditPage() {
   const [clienteInput, setClienteInput] = useState("");
 
   const { clientes, loading: clientesLoading, buscar, limpar } = useClientes();
+  const buscarTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { form, submitting, onSubmit } = useLaudoEditForm(laudo);
   const {
     analises,
@@ -92,16 +93,16 @@ export default function LaudoEditPage() {
   const [dataEntradaEdit, setDataEntradaEdit] = useState("");
   const [erroEdit, setErroEdit] = useState("");
 
-  const abrirDialogEdicao = (analise: AnaliseSolo) => {
+  const abrirDialogEdicao = useCallback((analise: AnaliseSolo) => {
     setNLabEdit(analise.n_lab);
     setReferenciaEdit(analise.referencia ?? "");
     setDataEntradaEdit(analise.data_entrada);
     setErroEdit("");
     setEditandoAmostra(analise);
-  };
+  }, []);
 
   const handleEditarAmostra = async () => {
-    if (!/^\d{4}\/\d{3}$/.test(nLabEdit.trim())) {
+    if (!/^\d{4}\/\d{3,}$/.test(nLabEdit.trim())) {
       setErroEdit("Formato inválido. Use AAAA/NNN (ex: 2026/001)");
       return;
     }
@@ -110,12 +111,16 @@ export default function LaudoEditPage() {
       return;
     }
     if (!editandoAmostra) return;
-    await editar(editandoAmostra.id, {
-      n_lab: nLabEdit.trim(),
-      referencia: referenciaEdit || null,
-      data_entrada: dataEntradaEdit,
-    });
-    setEditandoAmostra(null);
+    try {
+      await editar(editandoAmostra.id, {
+        n_lab: nLabEdit.trim(),
+        referencia: referenciaEdit || null,
+        data_entrada: dataEntradaEdit,
+      });
+      setEditandoAmostra(null);
+    } catch {
+      // erro já exibido pelo hook — mantém o dialog aberto
+    }
   };
 
   const abrirDialog = () => {
@@ -127,7 +132,7 @@ export default function LaudoEditPage() {
   };
 
   const handleCriarAmostra = async () => {
-    if (!/^\d{4}\/\d{3}$/.test(nLabNovo.trim())) {
+    if (!/^\d{4}\/\d{3,}$/.test(nLabNovo.trim())) {
       setErroNLab("Formato inválido. Use AAAA/NNN (ex: 2026/001)");
       return;
     }
@@ -135,13 +140,17 @@ export default function LaudoEditPage() {
       setErroNLab("Data de entrada obrigatória");
       return;
     }
-    await criar({
-      n_lab: nLabNovo.trim(),
-      referencia: referenciaNova || null,
-      data_entrada: dataEntradaNova,
-      ativo: true,
-    });
-    setDialogAberto(false);
+    try {
+      await criar({
+        n_lab: nLabNovo.trim(),
+        referencia: referenciaNova || null,
+        data_entrada: dataEntradaNova,
+        ativo: true,
+      });
+      setDialogAberto(false);
+    } catch {
+      // erro já exibido pelo hook — mantém o dialog aberto
+    }
   };
 
   useEffect(() => {
@@ -149,18 +158,23 @@ export default function LaudoEditPage() {
       navigate("/laudos");
       return;
     }
-    laudoService
-      .buscar(laudoId)
-      .then((data) => {
+    const controller = new AbortController();
+    const buscar = async () => {
+      try {
+        const data = await laudoService.buscar(laudoId, controller.signal);
         setLaudo(data);
         setClienteSelecionado(data.cliente);
         setClienteInput(`${data.cliente.codigo} — ${data.cliente.nome}`);
-      })
-      .catch((err) => {
+      } catch (err) {
+        if ((err as { code?: string })?.code === "ERR_CANCELED") return;
         showApiError(err);
         setErroFetch(true);
-      })
-      .finally(() => setBuscando(false));
+      } finally {
+        setBuscando(false);
+      }
+    };
+    void buscar();
+    return () => controller.abort();
   }, [laudoId, navigate, showApiError]);
 
   const clientesOpcoes = useMemo(() => {
@@ -172,6 +186,8 @@ export default function LaudoEditPage() {
 
   const handleClienteInput = (_: React.SyntheticEvent, value: string) => {
     setClienteInput(value);
+    if (buscarTimer.current) clearTimeout(buscarTimer.current);
+
     if (value.trim().length === 0) {
       if (clienteSelecionado) {
         setClienteSelecionado(null);
@@ -187,10 +203,10 @@ export default function LaudoEditPage() {
       limpar();
       return;
     }
-    buscar(value);
+    buscarTimer.current = setTimeout(() => void buscar(value), 300);
   };
 
-  const colunas: GridColDef<AnaliseSolo>[] = [
+  const colunas = useMemo<GridColDef<AnaliseSolo>[]>(() => [
     {
       field: "acoes",
       headerName: "Ações",
@@ -264,7 +280,7 @@ export default function LaudoEditPage() {
       valueFormatter: (value: number | null) => value ?? "—",
     },
     {
-      field: "ctc",
+      field: "T_maiusculo",
       headerName: "CTC",
       width: 80,
       valueFormatter: (value: number | null) => value ?? "—",
@@ -276,7 +292,7 @@ export default function LaudoEditPage() {
       valueFormatter: (value: number | null) =>
         value != null ? `${value}%` : "—",
     },
-  ];
+  ], [editando, removendo, salvando, abrirDialogEdicao, toggleAtivo]);
 
   if (buscando) {
     return (

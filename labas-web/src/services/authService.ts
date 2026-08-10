@@ -14,8 +14,6 @@ import { api } from "./api";
 import type {
   LoginPayload,
   TokenPair,
-  RegisterPayload,
-  RegisterResponse,
   AuthUser,
 } from "../types/auth";
 
@@ -41,16 +39,6 @@ const login = (data: LoginPayload) => api.post<TokenPair>("token/", data);
 const refresh = (refreshToken: string) =>
   api.post<{ access: string }>("token/refresh/", { refresh: refreshToken });
 
-/**
- * Registra um novo cliente (produtor rural) no sistema.
- *
- * Apenas usuários do tipo cliente podem se auto-cadastrar.
- * Contas de staff são criadas pelo administrador no Django Admin.
- *
- * @returns AuthUser — dados do usuário recém-criado
- */
-const register = (data: RegisterPayload) =>
-  api.post<RegisterResponse>("register/", data);
 
 /**
  * Busca os dados do usuário autenticado no momento.
@@ -62,4 +50,4 @@ const register = (data: RegisterPayload) =>
  */
 const me = () => api.get<AuthUser>("me/");
 
-export const authService = { login, refresh, register, me };
+export const authService = { login, refresh, me };
