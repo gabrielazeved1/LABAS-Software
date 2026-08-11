@@ -85,8 +85,7 @@ def analise(db, laudo):
     return AnaliseSolo.objects.create(
         laudo=laudo,
         n_lab="2026/001",
-        ativo=True,
-    )
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -102,7 +101,6 @@ def bateria_aa_ca(db):
         volume_solo=5.0,
         volume_extrator=50.0,
         leitura_branco=0.002,
-        ativo=True,
     )
     pontos = [
         (0.5, 0.028),
@@ -131,7 +129,6 @@ def bateria_fc_k(db):
         volume_solo=5.0,
         volume_extrator=50.0,
         leitura_branco=0.0,
-        ativo=True,
     )
     pontos = [
         (1.0, 0.048),
@@ -156,7 +153,6 @@ def bateria_ph(db):
         equipamento="PH",
         elemento="ph_agua",
         leitura_branco=None,
-        ativo=True,
     )
 
 
@@ -167,7 +163,6 @@ def bateria_es_mo(db):
         equipamento="ES",
         elemento="MO",
         leitura_branco=0.0,
-        ativo=True,
     )
     pontos = [
         (1.0, 0.150),
@@ -192,5 +187,4 @@ def bateria_ti_al(db):
         equipamento="TI",
         elemento="Al",
         leitura_branco=0.0,
-        ativo=True,
     )

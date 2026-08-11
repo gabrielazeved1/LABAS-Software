@@ -15,6 +15,12 @@ export const laudoService = {
     return data as PaginatedResponse<Laudo>;
   },
 
+  async buscarPorCodigo(search: string, signal?: AbortSignal): Promise<Laudo[]> {
+    const { data } = await api.get(BASE, { params: { search }, signal });
+    const result = Array.isArray(data) ? data : (data.results ?? []);
+    return result as Laudo[];
+  },
+
   async buscar(id: number, signal?: AbortSignal): Promise<Laudo> {
     const { data } = await api.get<Laudo>(`${BASE}${id}/`, { signal });
     return data;

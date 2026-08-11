@@ -16,26 +16,7 @@ from src.application.use_cases import CalculadoraAnaliseSolo
 
 
 # =============================================================================
-# 1. GERENCIAMENTO DA BATERIA ATIVA
-# =============================================================================
-
-
-@receiver(pre_save, sender=BateriaCalibracao)
-def garantir_bateria_unica_ativa(sender, instance, **kwargs):
-    """
-    Ao marcar uma bateria como ativa, desativa automaticamente todas as outras
-    do mesmo equipamento/elemento para garantir unicidade da curva do dia.
-    """
-    if instance.ativo:
-        BateriaCalibracao.objects.filter(
-            equipamento=instance.equipamento,
-            elemento=instance.elemento,
-            ativo=True,
-        ).exclude(pk=instance.pk).update(ativo=False)
-
-
-# =============================================================================
-# 2. CALCULO DA CURVA DE CALIBRACAO
+# 1. CALCULO DA CURVA DE CALIBRACAO
 # =============================================================================
 
 

@@ -68,7 +68,7 @@ def test_reativar_analise(client_autenticado, laudo, bateria_aa_ca):
     # Confirma que voltou a aparecer na bancada
     pendentes = client_autenticado.get(
         "/api/amostras/",
-        {"equipamento": "AA", "elemento": "Ca"},
+        {"bateria_id": bateria_aa_ca.id},
     )
     ids = [a["id"] for a in pendentes.data["results"]]
     assert analise_inativa.id in ids

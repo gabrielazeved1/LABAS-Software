@@ -464,8 +464,6 @@ class BateriaCalibracao(models.Model):
         null=True,
         verbose_name="Leitura do Branco",
     )
-    ativo = models.BooleanField(default=True, verbose_name="Bateria Ativa no Dia?")
-
     @property
     def equacao_formada(self):
         """Gera a string visual da equacao da reta para os paineis."""
@@ -551,6 +549,16 @@ class LeituraEquipamento(models.Model):
                             "fator_diluicao": f"O Fator de Diluicao e OBRIGATORIO na leitura de {self.bateria.get_equipamento_display()}."
                         }
                     )
+
+    class Meta:
+        verbose_name = "Leitura de Equipamento"
+        verbose_name_plural = "Leituras de Equipamento"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["analise", "bateria"],
+                name="unique_leitura_por_analise_bateria",
+            )
+        ]
 
     def __str__(self):
         return f"Laudo {self.analise.n_lab} | {self.bateria.get_elemento_display()}: {self.leitura_bruta}"

@@ -132,7 +132,6 @@ class BateriaCalibracaoAdmin(admin.ModelAdmin):
         "data_criacao",
         "equacao_formada",
         "r_quadrado",
-        "ativo",
     )
     readonly_fields = ("equacao_formada",)
 
@@ -152,7 +151,7 @@ class BateriaCalibracaoAdmin(admin.ModelAdmin):
         """
         info_bloco = (
             "Informacoes da Bateria",
-            {"fields": (("equipamento", "elemento"), "ativo")},
+            {"fields": (("equipamento", "elemento"),)},
         )
 
         metodologia_bloco = (

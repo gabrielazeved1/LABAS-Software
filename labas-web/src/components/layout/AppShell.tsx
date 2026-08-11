@@ -42,7 +42,9 @@ export default function AppShell({ children }: Props) {
       >
         {/* Espaço reservado para o AppHeader fixo não sobrepor o conteúdo */}
         <Toolbar />
-        {children}
+        <Box sx={{ maxWidth: 1280, mx: "auto", width: "100%" }}>
+          {children}
+        </Box>
       </Box>
     </Box>
   );

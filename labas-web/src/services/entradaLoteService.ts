@@ -1,5 +1,4 @@
 import { api } from "./api";
-import type { Equipamento, Elemento } from "../types/calibracao";
 import type {
   AmostraPendente,
   LeituraPayload,
@@ -12,15 +11,15 @@ const BASE_LEITURAS = "/leituras/";
 export const entradaLoteService = {
   /**
    * Busca as AnaliseSolo que ainda não possuem leitura registrada
-   * para a bateria ativa do equipamento/elemento informado.
+   * para a bateria informada pelo técnico.
    */
   async buscarAmostrasPendentes(
-    equipamento: Equipamento,
-    elemento: Elemento,
+    bateriaId: number,
+    laudoId?: number,
   ): Promise<AmostraPendente[]> {
-    const { data } = await api.get(BASE_AMOSTRAS, {
-      params: { equipamento, elemento },
-    });
+    const params: Record<string, number> = { bateria_id: bateriaId };
+    if (laudoId !== undefined) params.laudo_id = laudoId;
+    const { data } = await api.get(BASE_AMOSTRAS, { params });
     return Array.isArray(data) ? data : (data.results ?? []);
   },
 
