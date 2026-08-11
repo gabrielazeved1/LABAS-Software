@@ -1,0 +1,163 @@
+================================================================================
+LABAS SOFTWARE — REFATORAÇÃO DA BANCADA DE LEITURAS
+Data: 11/08/2026
+================================================================================
+
+
+CONTEXTO
+--------
+A tela "Amostras" (EntradaLotePage) é a bancada digital onde o técnico digita
+as leituras brutas dos equipamentos. O fluxo atual carrega TODAS as amostras
+pendentes do sistema para um par equipamento+elemento, sem distinção de laudo
+e sem controle de qual calibração usar.
+
+Identificamos três problemas:
+
+  1. Resultado Calculado sempre "—" para Titulação e pH
+     → Bug no frontend: lógica de "semCurva" tratava TI e PH como equipamentos
+       sem curva calculada, descartando o resultado mesmo quando o backend
+       retornava o valor correto. Já corrigido.
+
+  2. Sem separação por laudo
+     → Técnico vê amostras de todos os laudos misturadas. Difícil rastrear
+       qual lote está sendo processado.
+
+  3. Concorrência sem controle
+     → Dois técnicos podem ver e salvar a mesma amostra simultaneamente.
+       O banco não tem restrição única em (analise, bateria), então surgem
+       leituras duplicadas e o valor final da análise depende de qual
+       request chegar por último (race condition no signal).
+
+
+================================================================================
+MUDANÇAS A IMPLEMENTAR
+================================================================================
+
+
+MUDANÇA 1 — Fluxo por Laudo
+----------------------------
+Descrição:
+  O técnico escolhe primeiro o laudo que está processando. As amostras
+  carregadas são apenas as daquele laudo, não do sistema inteiro.
+
+Novo fluxo de tela:
+  [Laudo] → [Equipamento] → [Elemento] → [Bateria] → [Carregar]
+
+Motivação:
+  - Cada técnico trabalha em laudos diferentes → concorrência resolvida
+    na prática sem precisar de locks complexos no banco.
+  - Rastreabilidade: técnico sabe exatamente qual lote está na bancada.
+  - Alinhado com o fluxo físico real do laboratório (um laudo por vez).
+
+Trade-off aceito:
+  - Técnico não pode mais digitar amostras de múltiplos laudos em uma
+    única tela. Para labs que processam lotes grandes misturados isso
+    seria limitante, mas para o LABAS (~5 usuários, laudos menores)
+    o fluxo laudo-a-laudo já é a realidade.
+
+Mudanças técnicas:
+  Frontend:
+    - Adicionar autocomplete de Laudo (busca por código) antes dos filtros
+    - Passar laudo_id como parâmetro na chamada buscarAmostrasPendentes
+  Backend:
+    - AmostrasPendentesListView aceita query param laudo_id
+    - Filtro adicional: analise__laudo_id = laudo_id
+
+
+MUDANÇA 2 — Escolha Manual da Bateria + Remoção do campo ativo
+---------------------------------------------------------------
+Descrição:
+  Em vez de o sistema pegar automaticamente a bateria com ativo=True,
+  o técnico escolhe qual bateria (calibração) usar para o lote atual.
+  O campo ativo é removido completamente — baterias são ordenadas por
+  data de criação (mais recente aparece primeiro).
+
+Decisão: campo ativo REMOVIDO COMPLETAMENTE.
+  - Não há chip "Ativa" na listagem de calibrações
+  - Não há pré-seleção automática no dropdown
+  - Ordenação por data já cumpre o papel de destaque da mais recente
+  - Técnico sempre escolhe explicitamente qual bateria usar
+
+Motivação:
+  - Cenário real: amostras coletadas na segunda-feira precisam ser lidas
+    com a calibração da segunda-feira, mesmo que hoje (terça) já exista
+    uma calibração mais nova.
+  - O campo ativo criava uma falsa sensação de controle — na prática
+    o técnico já sabe qual calibração usar pelo contexto do dia.
+
+Trade-off aceito:
+  - O técnico tem responsabilidade de escolher a bateria correta.
+    Isso já é uma responsabilidade dele na bancada física — o sistema
+    apenas torna esse controle explícito e rastreável.
+
+Mudanças técnicas:
+  Backend:
+    - Remover campo ativo de BateriaCalibracao (model + migration)
+    - Remover toda lógica que filtra por ativo=True
+    - Endpoint de listagem de baterias ordena por data_criacao DESC
+    - AmostrasPendentesListView recebe bateria_id diretamente
+  Frontend:
+    - Remover chip "Ativa" da CalibracaoListPage
+    - Remover toggle ativo/inativo da tela de calibração
+    - Substituir busca automática de bateria ativa por dropdown
+      listando todas as baterias do equipamento+elemento selecionado
+    - Exibir data e leitura do branco de cada opção para ajudar escolha
+  Calibração:
+    - Remoção do botão/ação "Ativar bateria"
+    - Lista de calibrações ordenada por data, sem distinção visual de ativa
+
+
+MUDANÇA 3 — Restrição de Unicidade no Banco (proteção extra)
+-------------------------------------------------------------
+Descrição:
+  Adicionar UniqueConstraint(analise, bateria) em LeituraEquipamento para
+  garantir que mesmo em caso de bug ou uso paralelo indevido, o banco
+  rejeite leituras duplicadas para a mesma amostra+bateria.
+
+Motivação:
+  - As mudanças 1 e 2 resolvem concorrência na prática (laudos separados),
+    mas a proteção no banco é uma camada de segurança independente.
+  - Sem ela, um bug de frontend ou chamada direta à API poderia criar
+    dados duplicados silenciosamente.
+
+Mudanças técnicas:
+  Backend:
+    - Adicionar à Meta de LeituraEquipamento:
+        constraints = [UniqueConstraint(fields=["analise", "bateria"], ...)]
+    - Criar migration correspondente
+    - Tratar IntegrityError na view retornando HTTP 409 com mensagem clara
+
+
+================================================================================
+CORREÇÃO JÁ APLICADA (não precisa reimplementar)
+================================================================================
+
+  Bug: Resultado Calculado sempre "—" para Titulação e pH
+  Arquivo: labas-web/src/hooks/useEntradaLote.ts
+
+  Causa: a verificação `coeficiente_angular_a === null` era usada como proxy
+  para "equipamento sem curva", mas TI e PH não têm curva por design — então
+  o resultado era sempre descartado mesmo quando o backend calculava corretamente.
+
+  Fix: usar SEM_CURVA_CALIBRACAO.includes(equipamento) para distinguir
+  equipamentos que não precisam de curva (TI, PH) dos que precisam mas ainda
+  não têm curva calculada (AA, FC, ES sem pontos).
+
+
+================================================================================
+ORDEM DE IMPLEMENTAÇÃO SUGERIDA
+================================================================================
+
+  1. Mudança 3 (UniqueConstraint)
+     Backend puro, sem impacto no frontend, baixo risco.
+     Protege o banco antes de qualquer outra mudança.
+
+  2. Mudança 2 (remoção do ativo + escolha manual da bateria)
+     Backend: remover campo, ajustar endpoints, nova listagem de baterias.
+     Frontend: remover chip/toggle, adicionar dropdown na bancada.
+
+  3. Mudança 1 (fluxo por laudo)
+     Integra com o dropdown de bateria já pronto.
+     Fecha o fluxo completo da bancada.
+
+================================================================================

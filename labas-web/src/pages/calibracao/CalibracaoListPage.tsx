@@ -6,7 +6,6 @@ import {
   Chip,
   CircularProgress,
   IconButton,
-  Switch,
   Tab,
   Table,
   TableBody,
@@ -47,7 +46,6 @@ export default function CalibracaoListPage() {
     baterias,
     loading,
     setEquipamentoFiltro,
-    toggleAtivo,
     removerBateria,
   } = useCalibracao(EQUIPAMENTOS[0].value);
 
@@ -127,7 +125,7 @@ export default function CalibracaoListPage() {
               <TableCell>Data</TableCell>
               <TableCell>Equação</TableCell>
               <TableCell align="center">R²</TableCell>
-              <TableCell align="center">Ativa</TableCell>
+              <TableCell align="center">Leituras</TableCell>
               <TableCell align="center">Ações</TableCell>
             </TableRow>
           </TableHead>
@@ -175,14 +173,9 @@ export default function CalibracaoListPage() {
                   )}
                 </TableCell>
                 <TableCell align="center">
-                  <Switch
-                    checked={bateria.ativo}
-                    onChange={(e) => toggleAtivo(bateria.id, e.target.checked)}
-                    color="success"
-                    slotProps={{
-                      input: { "aria-label": `Ativar bateria ${bateria.id}` },
-                    }}
-                  />
+                  <Typography variant="body2" color="text.secondary">
+                    {bateria.leituras_count}
+                  </Typography>
                 </TableCell>
                 <TableCell align="center">
                   <Tooltip title="Ver / Editar pontos">
@@ -197,7 +190,7 @@ export default function CalibracaoListPage() {
                   <Tooltip
                     title={
                       bateria.leituras_count > 0
-                        ? `Possui ${bateria.leituras_count} leitura(s) vinculada(s). Use o toggle para desativar.`
+                        ? `Possui ${bateria.leituras_count} leitura(s) vinculada(s) — não pode ser removida.`
                         : "Remover bateria"
                     }
                   >

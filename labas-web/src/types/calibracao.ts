@@ -72,9 +72,6 @@ export interface BateriaCalibracao {
   /** Leitura do branco (solução sem analito) para correção de fundo */
   leitura_branco: number | null;
 
-  /** Indica se esta é a bateria ativa para o elemento/equipamento no dia */
-  ativo: boolean;
-
   /** Quantidade de leituras de amostras reais vinculadas a esta bateria */
   leituras_count: number;
 

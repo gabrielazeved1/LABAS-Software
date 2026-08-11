@@ -6,7 +6,6 @@ import {
   Chip,
   CircularProgress,
   Divider,
-  FormControlLabel,
   IconButton,
   MenuItem,
   Paper,
@@ -14,7 +13,6 @@ import {
   Step,
   StepLabel,
   Stepper,
-  Switch,
   Table,
   TableBody,
   TableCell,
@@ -226,13 +224,6 @@ export default function CalibracaoFormPage() {
                   }
                 />
               )}
-
-              <FormControlLabel
-                control={
-                  <Switch defaultChecked {...bateriaForm.register("ativo")} />
-                }
-                label="Marcar como bateria ativa"
-              />
 
               <Button
                 type="submit"

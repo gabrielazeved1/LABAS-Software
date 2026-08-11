@@ -50,7 +50,6 @@ export function useCalibracaoForm(
     defaultValues: {
       equipamento: initialEquipamento ?? "AA",
       elemento: "",
-      ativo: true,
     },
   });
 
@@ -61,7 +60,6 @@ export function useCalibracaoForm(
         const payload: CriarBateriaPayload = {
           equipamento: data.equipamento,
           elemento: data.elemento,
-          ativo: data.ativo,
           volume_solo: REQUER_VOLUMES.includes(data.equipamento)
             ? (data.volume_solo ?? null)
             : null,

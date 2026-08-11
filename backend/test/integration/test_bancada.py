@@ -107,7 +107,7 @@ def test_leitura_ti_al(client_autenticado, analise, bateria_ti_al):
 @pytest.mark.django_db
 def test_leitura_ti_h_al(client_autenticado, analise, db):
     bateria_h_al = BateriaCalibracao.objects.create(
-        equipamento="TI", elemento="H_Al", leitura_branco=0.0, ativo=True,
+        equipamento="TI", elemento="H_Al", leitura_branco=0.0,
     )
 
     response = postar_leitura(
@@ -129,7 +129,7 @@ def test_leitura_ti_h_al(client_autenticado, analise, db):
 def test_relacoes_agronomicas_completas(client_autenticado, analise, bateria_aa_ca, bateria_fc_k, db):
     bateria_aa_mg = BateriaCalibracao.objects.create(
         equipamento="AA", elemento="Mg",
-        volume_solo=5, volume_extrator=50, leitura_branco=0.002, ativo=True,
+        volume_solo=5, volume_extrator=50, leitura_branco=0.002,
     )
     pontos_mg = [(0.5, 0.022), (1.0, 0.043), (2.0, 0.086), (4.0, 0.171)]
     for conc, abs_ in pontos_mg:
@@ -182,11 +182,10 @@ def test_analise_inativa_nao_aparece_em_pendentes(client_autenticado, laudo, bat
 
     response = client_autenticado.get(
         "/api/amostras/",
-        {"equipamento": "AA", "elemento": "Ca"},
+        {"bateria_id": bateria_aa_ca.id},
     )
 
     assert response.status_code == 200
-    # endpoint paginado — resultados em "results"
     ids = [a["id"] for a in response.data["results"]]
     assert analise_inativa.id not in ids
 
@@ -200,7 +199,7 @@ def test_leitura_bateria_sem_curva_nao_gera_500(client_autenticado, analise, db)
     bateria_sem_curva = BateriaCalibracao.objects.create(
         equipamento="AA", elemento="Ca",
         volume_solo=5, volume_extrator=50, leitura_branco=0.002,
-        ativo=False,  # sem pontos — curva null
+        # sem pontos — curva null
     )
 
     response = postar_leitura(

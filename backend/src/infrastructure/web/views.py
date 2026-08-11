@@ -1,4 +1,5 @@
 from io import BytesIO
+from django.db import IntegrityError
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.http import HttpResponse
@@ -33,7 +34,6 @@ from .serializers import (
     TecnicoSerializer,
     TecnicoCriarSerializer,
     BateriaCalibracaoSerializer,
-    BateriaCalibracaoAtivoSerializer,
     PontoCalibracaoSerializer,
     AmostraPendenteSerializer,
     LeituraEquipamentoSerializer,
@@ -144,13 +144,20 @@ class LaudoListCreateView(generics.ListCreateAPIView):
         user = self.request.user
         if user.is_anonymous:
             return Laudo.objects.none()
-        if user.is_staff:
-            return Laudo.objects.select_related("cliente").order_by("-data_emissao")
-        return (
-            Laudo.objects.select_related("cliente")
+
+        qs = (
+            Laudo.objects.select_related("cliente").order_by("-data_emissao")
+            if user.is_staff
+            else Laudo.objects.select_related("cliente")
             .filter(cliente__usuario=user)
             .order_by("-data_emissao")
         )
+
+        search = self.request.query_params.get("search")
+        if search:
+            qs = qs.filter(codigo_laudo__icontains=search)
+
+        return qs
 
 
 class LaudoDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -290,14 +297,10 @@ class BateriaCalibracaoListCreateView(generics.ListCreateAPIView):
         ).order_by("-data_criacao")
         equipamento = self.request.query_params.get("equipamento")
         elemento = self.request.query_params.get("elemento")
-        ativo = self.request.query_params.get("ativo")
         if equipamento:
             qs = qs.filter(equipamento=equipamento)
         if elemento:
             qs = qs.filter(elemento=elemento)
-        if ativo is not None:
-            ativo_bool = ativo.lower() in ["true", "1", "yes"]
-            qs = qs.filter(ativo=ativo_bool)
         return qs
 
 
@@ -322,12 +325,6 @@ class BateriaCalibracaoDetailView(generics.RetrieveUpdateDestroyAPIView):
         return [IsAuthenticated(), IsAdminUser()]
 
     def get_serializer_class(self):
-        # PATCH exclusivo para o campo ativo — evita sobrescrita dos coeficientes
-        if self.request.method == "PATCH":
-            payload_keys = set(getattr(self.request, "data", {}).keys())
-            if payload_keys and payload_keys.issubset({"ativo"}):
-                return BateriaCalibracaoAtivoSerializer
-            return BateriaCalibracaoSerializer
         return BateriaCalibracaoSerializer
 
     def partial_update(self, request, *args, **kwargs):
@@ -393,9 +390,9 @@ class PontoCalibracaoDestroyView(generics.DestroyAPIView):
 
 class AmostrasPendentesListView(generics.ListAPIView):
     """
-    GET /api/amostras/?equipamento=AA&elemento=Ca
+    GET /api/amostras/?bateria_id=42
     Lista as AnaliseSolo que ainda nao possuem LeituraEquipamento
-    vinculada a bateria ativa do elemento/equipamento solicitado.
+    vinculada a bateria informada pelo tecnico.
     """
 
     serializer_class = AmostraPendenteSerializer
@@ -406,32 +403,35 @@ class AmostrasPendentesListView(generics.ListAPIView):
         return [IsAuthenticated(), IsAdminUser()]
 
     def get_queryset(self):
-        equipamento = self.request.query_params.get("equipamento")
-        elemento = self.request.query_params.get("elemento")
+        bateria_id = self.request.query_params.get("bateria_id")
+        laudo_id = self.request.query_params.get("laudo_id")
 
-        if not equipamento or not elemento:
+        if not bateria_id:
             return AnaliseSolo.objects.none()
 
         try:
-            bateria_ativa = BateriaCalibracao.objects.get(
-                equipamento=equipamento,
-                elemento=elemento,
-                ativo=True,
-            )
-        except (BateriaCalibracao.DoesNotExist, BateriaCalibracao.MultipleObjectsReturned):
+            bateria = BateriaCalibracao.objects.get(id=bateria_id)
+        except BateriaCalibracao.DoesNotExist:
             return AnaliseSolo.objects.none()
 
-        # Exclui amostras que ja possuem leitura registrada para esta bateria ativa
+        # Exclui amostras que já foram lidas com QUALQUER bateria do mesmo
+        # equipamento+elemento — não apenas a bateria selecionada.
+        # Uma amostra é lida uma vez por elemento, independente da calibração usada.
         ids_com_leitura = LeituraEquipamento.objects.filter(
-            bateria=bateria_ativa
+            bateria__equipamento=bateria.equipamento,
+            bateria__elemento=bateria.elemento,
         ).values_list("analise_id", flat=True)
 
-        return (
+        qs = (
             AnaliseSolo.objects.select_related("laudo__cliente")
             .filter(ativo=True)
             .exclude(id__in=ids_com_leitura)
-            .order_by("n_lab")
         )
+
+        if laudo_id:
+            qs = qs.filter(laudo_id=laudo_id)
+
+        return qs.order_by("n_lab")
 
 
 class LeituraEquipamentoCreateView(generics.CreateAPIView):
@@ -457,7 +457,13 @@ class LeituraEquipamentoCreateView(generics.CreateAPIView):
 
         # Persiste a LeituraEquipamento — o signal post_save dispara aqui
         # e grava o resultado calculado no campo correspondente da AnaliseSolo.
-        leitura = serializer.save()
+        try:
+            leitura = serializer.save()
+        except IntegrityError:
+            return Response(
+                {"detail": "Esta amostra já possui leitura registrada para esta bateria."},
+                status=status.HTTP_409_CONFLICT,
+            )
 
         # Obrigatorio: o objeto analise em memoria nao reflete o update feito
         # pelo signal. O refresh garante que lemos o valor recém-persistido.
@@ -631,7 +637,7 @@ class DashboardStatsView(APIView):
                 data_entrada__gte=primeiro_do_mes
             ).count(),
             "total_clientes": Cliente.objects.count(),
-            "baterias_ativas": BateriaCalibracao.objects.filter(ativo=True).count(),
+            "total_baterias": BateriaCalibracao.objects.count(),
         }
         return Response(stats)
 

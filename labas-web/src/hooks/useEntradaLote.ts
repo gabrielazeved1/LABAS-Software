@@ -1,12 +1,14 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   calibracaoService,
   type BateriaCalibracaoComPontos,
 } from "../services/calibracaoService";
 import { entradaLoteService } from "../services/entradaLoteService";
+import { laudoService } from "../services/laudoService";
 import { useSnackbar } from "./useSnackbar";
-import { REQUER_VOLUMES } from "../config/calibracaoConstants";
+import { REQUER_VOLUMES, SEM_CURVA_CALIBRACAO } from "../config/calibracaoConstants";
 import type { Equipamento, Elemento } from "../types/calibracao";
+import type { Laudo } from "../types/analise";
 import type { LinhaBancada } from "../types/entradaLote";
 
 const normalizeDecimalInput = (value: string) =>
@@ -15,41 +17,137 @@ const normalizeDecimalInput = (value: string) =>
 export function useEntradaLote() {
   const { showSuccess, showError, showApiError } = useSnackbar();
 
+  // ── Laudo ──────────────────────────────────────────────────────────────────
+  const [laudoInput, setLaudoInput] = useState("");
+  const [laudoSelecionado, setLaudoSelecionado] = useState<Laudo | null>(null);
+  const [laudoOpcoes, setLaudoOpcoes] = useState<Laudo[]>([]);
+  const [loadingLaudos, setLoadingLaudos] = useState(false);
+  const laudoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const laudoAbort = useRef<AbortController | null>(null);
+
+  // ── Equipamento / Elemento ─────────────────────────────────────────────────
   const [equipamento, setEquipamento] = useState<Equipamento | "">("");
   const [elemento, setElemento] = useState<Elemento | "">("");
-  const [bateriaAtiva, setBateriaAtiva] =
+
+  // ── Bateria ────────────────────────────────────────────────────────────────
+  const [baterias, setBaterias] = useState<BateriaCalibracaoComPontos[]>([]);
+  const [loadingBaterias, setLoadingBaterias] = useState(false);
+  const [bateriaSelecionada, setBateriaSelecionada] =
     useState<BateriaCalibracaoComPontos | null>(null);
+
+  // ── Bancada ────────────────────────────────────────────────────────────────
   const [linhas, setLinhas] = useState<LinhaBancada[]>([]);
   const [loadingAmostras, setLoadingAmostras] = useState(false);
   const [salvando, setSalvando] = useState<Record<string, boolean>>({});
-  // Evita exibir alertas de bateria antes da primeira pesquisa
   const [jaFiltrou, setJaFiltrou] = useState(false);
 
-  /** Carrega a bateria ativa e as amostras pendentes para os filtros selecionados. */
-  const handleFiltrar = useCallback(async () => {
-    if (!equipamento || !elemento) {
-      showError("Selecione o equipamento e o elemento antes de carregar.");
+  // ── Busca de laudos (debounced) ────────────────────────────────────────────
+  const handleLaudoInput = useCallback((_: React.SyntheticEvent, value: string) => {
+    setLaudoInput(value);
+
+    if (!value || value.trim().length < 2) {
+      setLaudoOpcoes([]);
       return;
     }
 
+    if (laudoTimer.current) clearTimeout(laudoTimer.current);
+    laudoTimer.current = setTimeout(async () => {
+      if (laudoAbort.current) laudoAbort.current.abort();
+      laudoAbort.current = new AbortController();
+      setLoadingLaudos(true);
+      try {
+        const lista = await laudoService.buscarPorCodigo(
+          value.trim(),
+          laudoAbort.current.signal,
+        );
+        setLaudoOpcoes(lista);
+      } catch {
+        // busca cancelada ou erro silencioso
+      } finally {
+        setLoadingLaudos(false);
+      }
+    }, 300);
+  }, []);
+
+  const handleLaudoChange = useCallback(
+    (_: React.SyntheticEvent, laudo: Laudo | null) => {
+      setLaudoSelecionado(laudo);
+      setEquipamento("");
+      setElemento("");
+      setBaterias([]);
+      setBateriaSelecionada(null);
+      setLinhas([]);
+      setJaFiltrou(false);
+    },
+    [],
+  );
+
+  // ── Carrega baterias ao mudar equipamento+elemento ─────────────────────────
+  const carregarBaterias = useCallback(
+    async (eq: Equipamento, el: Elemento) => {
+      setLoadingBaterias(true);
+      setBaterias([]);
+      setBateriaSelecionada(null);
+      setLinhas([]);
+      setJaFiltrou(false);
+      try {
+        const lista = await calibracaoService.listarBaterias(eq, el);
+        setBaterias(lista);
+      } catch {
+        showError("Erro ao carregar baterias disponíveis.");
+      } finally {
+        setLoadingBaterias(false);
+      }
+    },
+    [showError],
+  );
+
+  const handleSetEquipamento = useCallback(
+    (eq: Equipamento | "") => {
+      setEquipamento(eq);
+      setElemento("");
+      setBaterias([]);
+      setBateriaSelecionada(null);
+      setLinhas([]);
+      setJaFiltrou(false);
+    },
+    [],
+  );
+
+  const handleSetElemento = useCallback(
+    (el: Elemento | "") => {
+      setElemento(el);
+      setBateriaSelecionada(null);
+      setLinhas([]);
+      setJaFiltrou(false);
+      if (equipamento && el) {
+        void carregarBaterias(equipamento as Equipamento, el as Elemento);
+      } else {
+        setBaterias([]);
+      }
+    },
+    [equipamento, carregarBaterias],
+  );
+
+  // ── Carrega amostras ───────────────────────────────────────────────────────
+  const handleFiltrar = useCallback(async () => {
+    if (!bateriaSelecionada) {
+      showError("Selecione uma bateria antes de carregar.");
+      return;
+    }
     setLoadingAmostras(true);
-    setBateriaAtiva(null);
     setLinhas([]);
     setJaFiltrou(true);
-
     try {
-      const [bateria, amostras] = await Promise.all([
-        calibracaoService.buscarBateriaAtiva(equipamento, elemento),
-        entradaLoteService.buscarAmostrasPendentes(equipamento, elemento),
-      ]);
-
-      setBateriaAtiva(bateria);
-
+      const amostras = await entradaLoteService.buscarAmostrasPendentes(
+        bateriaSelecionada.id,
+        laudoSelecionado?.id,
+      );
       setLinhas(
         amostras.map((a) => ({
           ...a,
-          equipamento,
-          elemento,
+          equipamento: bateriaSelecionada.equipamento,
+          elemento: bateriaSelecionada.elemento as Elemento,
           leitura_bruta: "",
           fator_diluicao: "",
           resultado_preview: null,
@@ -57,48 +155,30 @@ export function useEntradaLote() {
         })),
       );
     } catch {
-      showError(
-        "Erro ao carregar amostras. Verifique a conexão com o servidor.",
-      );
+      showError("Erro ao carregar amostras.");
     } finally {
       setLoadingAmostras(false);
     }
-  }, [equipamento, elemento, showError]);
+  }, [bateriaSelecionada, laudoSelecionado, showError]);
 
-  /**
-   * Chamado automaticamente pelo DataGrid ao confirmar a edição de uma célula.
-   * O backend é a única fonte de verdade: o resultado calculado é lido da resposta
-   * da API após o salvamento da LeituraEquipamento.
-   */
+  // ── Salva leitura ao editar célula ─────────────────────────────────────────
   const handleProcessRowUpdate = useCallback(
     async (
       newRow: LinhaBancada,
       oldRow: LinhaBancada,
     ): Promise<LinhaBancada> => {
-      if (!bateriaAtiva) return oldRow;
-      if (
-        bateriaAtiva.equipamento !== equipamento ||
-        bateriaAtiva.elemento !== elemento
-      ) {
-        showError(
-          "A curva ativa não corresponde ao equipamento/elemento selecionado.",
-        );
-        return oldRow;
-      }
+      if (!bateriaSelecionada) return oldRow;
 
       const leituraNum = parseFloat(
         normalizeDecimalInput(newRow.leitura_bruta),
       );
-      // Leitura ainda vazia: preserva valores intermediários (ex: fd já preenchido)
-      // sem chamar a API ainda.
       if (isNaN(leituraNum)) return newRow;
 
-      const precisaFd = REQUER_VOLUMES.includes(bateriaAtiva.equipamento);
+      const precisaFd = REQUER_VOLUMES.includes(bateriaSelecionada.equipamento);
       const fdNum = newRow.fator_diluicao
         ? parseFloat(normalizeDecimalInput(newRow.fator_diluicao))
         : undefined;
 
-      // Fator obrigatório ainda vazio: preserva a leitura digitada sem chamar a API.
       if (precisaFd && fdNum === undefined) return newRow;
 
       setSalvando((prev) => ({ ...prev, [newRow.n_lab]: true }));
@@ -106,14 +186,13 @@ export function useEntradaLote() {
       try {
         const resposta = await entradaLoteService.salvarLeitura({
           analise: newRow.id,
-          bateria: bateriaAtiva.id,
+          bateria: bateriaSelecionada.id,
           leitura_bruta: leituraNum,
           ...(fdNum !== undefined && { fator_diluicao: fdNum }),
         });
 
-        // J5-02: backend retorna 0.0 (default do model) quando a bateria não tem
-        // curva calculada. Tratamos como null para exibir "—" em vez de "0.0000".
-        const semCurva = bateriaAtiva.coeficiente_angular_a === null;
+        const usaCurva = !SEM_CURVA_CALIBRACAO.includes(bateriaSelecionada.equipamento);
+        const semCurva = usaCurva && bateriaSelecionada.coeficiente_angular_a === null;
         const linhaAtualizada: LinhaBancada = {
           ...newRow,
           resultado_preview: semCurva ? null : (resposta.resultado_calculado ?? null),
@@ -136,30 +215,28 @@ export function useEntradaLote() {
         setSalvando((prev) => ({ ...prev, [newRow.n_lab]: false }));
       }
     },
-    [bateriaAtiva, equipamento, elemento, showSuccess, showApiError, showError],
+    [bateriaSelecionada, showSuccess, showApiError],
   );
 
-  const handleSetEquipamento = useCallback((eq: Equipamento | "") => {
-    setEquipamento(eq);
-    setElemento("");
-    setBateriaAtiva(null);
-    setLinhas([]);
-    setJaFiltrou(false);
-  }, []);
-
-  const handleSetElemento = useCallback((el: Elemento | "") => {
-    setElemento(el);
-    setBateriaAtiva(null);
-    setLinhas([]);
-    setJaFiltrou(false);
-  }, []);
-
   return {
+    // laudo
+    laudoInput,
+    laudoSelecionado,
+    laudoOpcoes,
+    loadingLaudos,
+    handleLaudoInput,
+    handleLaudoChange,
+    // equipamento / elemento
     equipamento,
     handleSetEquipamento,
     elemento,
     handleSetElemento,
-    bateriaAtiva,
+    // bateria
+    baterias,
+    loadingBaterias,
+    bateriaSelecionada,
+    setBateriaSelecionada,
+    // bancada
     jaFiltrou,
     linhas,
     loadingAmostras,

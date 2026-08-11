@@ -1,7 +1,7 @@
 """
 Jornada 3 — Calibração de Equipamentos
-Valida criação de baterias, obrigatoriedade de campos por equipamento,
-cálculo automático da curva via signal e unicidade da bateria ativa.
+Valida criação de baterias, obrigatoriedade de campos por equipamento
+e cálculo automático da curva via signal.
 """
 
 import pytest
@@ -44,7 +44,7 @@ def test_criar_bateria_ph(client_autenticado):
 
 
 # ---------------------------------------------------------------------------
-# 3.3 — ES/MO: clean() exige volumes para todo ES, inclusive MO
+# 3.3 — ES/MO: fórmula fixa, não exige volumes
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
@@ -98,7 +98,6 @@ def test_criar_bateria_es_sem_volume_solo(client_autenticado):
 
 @pytest.mark.django_db
 def test_um_ponto_nao_gera_curva(client_autenticado, bateria_aa_ca):
-    # Remove pontos do fixture para partir do zero
     bateria_aa_ca.pontos.all().delete()
     bateria_aa_ca.refresh_from_db()
     assert bateria_aa_ca.coeficiente_angular_a is None
@@ -143,46 +142,14 @@ def test_segundo_ponto_gera_curva(client_autenticado, bateria_aa_ca):
 
 
 # ---------------------------------------------------------------------------
-# 3.8 — Ativar bateria B desativa bateria A do mesmo elemento
-# ---------------------------------------------------------------------------
-
-@pytest.mark.django_db
-def test_ativar_bateria_desativa_outra_do_mesmo_elemento(client_autenticado, db):
-    bateria_a = BateriaCalibracao.objects.create(
-        equipamento="AA", elemento="Ca",
-        volume_solo=5, volume_extrator=50, leitura_branco=0.002,
-        ativo=True,
-    )
-    bateria_b = BateriaCalibracao.objects.create(
-        equipamento="AA", elemento="Ca",
-        volume_solo=5, volume_extrator=50, leitura_branco=0.002,
-        ativo=False,
-    )
-
-    response = client_autenticado.patch(
-        f"/api/baterias/{bateria_b.id}/",
-        {"ativo": True},
-        format="json",
-    )
-
-    assert response.status_code == 200
-    bateria_a.refresh_from_db()
-    bateria_b.refresh_from_db()
-    assert bateria_b.ativo is True
-    assert bateria_a.ativo is False
-
-
-# ---------------------------------------------------------------------------
-# 3.9 — Remover ponto → curva resetada para NULL
+# 3.8 — Remover ponto → curva resetada para NULL
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
 def test_remover_ponto_reseta_curva(client_autenticado, bateria_aa_ca):
     assert bateria_aa_ca.coeficiente_angular_a is not None
 
-    # Mantém só 1 ponto (suficiente para resetar a curva)
     pontos = list(bateria_aa_ca.pontos.all())
-    ponto_a_manter = pontos[0]
     for p in pontos[1:]:
         client_autenticado.delete(f"/api/pontos/{p.id}/")
 
@@ -191,7 +158,7 @@ def test_remover_ponto_reseta_curva(client_autenticado, bateria_aa_ca):
 
 
 # ---------------------------------------------------------------------------
-# 3.10 — Criar bateria sem autenticação → 401
+# 3.9 — Criar bateria sem autenticação → 401
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
@@ -205,19 +172,20 @@ def test_criar_bateria_sem_autenticacao(client_anonimo):
 
 
 # ---------------------------------------------------------------------------
-# 3.11 — Ativar bateria já ativa é idempotente
+# 3.10 — Múltiplas baterias do mesmo elemento coexistem normalmente
 # ---------------------------------------------------------------------------
 
 @pytest.mark.django_db
-def test_ativar_bateria_ja_ativa_e_idempotente(client_autenticado, bateria_aa_ca):
-    assert bateria_aa_ca.ativo is True
+def test_multiplas_baterias_mesmo_elemento(client_autenticado, db):
+    """Sem o campo ativo, múltiplas baterias podem existir para o mesmo par."""
+    for _ in range(3):
+        response = client_autenticado.post("/api/baterias/", {
+            "equipamento": "AA",
+            "elemento": "Ca",
+            "volume_solo": 5,
+            "volume_extrator": 50,
+            "leitura_branco": 0.002,
+        }, format="json")
+        assert response.status_code == 201
 
-    response = client_autenticado.patch(
-        f"/api/baterias/{bateria_aa_ca.id}/",
-        {"ativo": True},
-        format="json",
-    )
-
-    assert response.status_code == 200
-    bateria_aa_ca.refresh_from_db()
-    assert bateria_aa_ca.ativo is True
+    assert BateriaCalibracao.objects.filter(equipamento="AA", elemento="Ca").count() == 3

@@ -268,7 +268,6 @@ class BateriaCalibracaoSerializer(serializers.ModelSerializer):
             "coeficiente_linear_b",
             "r_quadrado",
             "leitura_branco",
-            "ativo",
             "equacao_formada",
             "leituras_count",
             "pontos",
@@ -293,14 +292,6 @@ class BateriaCalibracaoSerializer(serializers.ModelSerializer):
         except DjangoValidationError as e:
             raise serializers.ValidationError(e.message_dict)
         return attrs
-
-
-class BateriaCalibracaoAtivoSerializer(serializers.ModelSerializer):
-    """Serializer exclusivo para o PATCH de toggle ativo — aceita apenas o campo ativo."""
-
-    class Meta:
-        model = BateriaCalibracao
-        fields = ["ativo"]
 
 
 # =============================================================================

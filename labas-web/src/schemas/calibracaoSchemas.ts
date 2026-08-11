@@ -7,7 +7,6 @@ export const bateriaSchema = z.object({
   volume_solo: z.coerce.number().nullable().optional(),
   volume_extrator: z.coerce.number().nullable().optional(),
   leitura_branco: z.coerce.number().nullable().optional(),
-  ativo: z.boolean(),
 });
 
 export const pontoSchema = z.object({

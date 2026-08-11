@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Chip,
@@ -11,6 +12,7 @@ import {
   MenuItem,
   Select,
   Stack,
+  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -31,9 +33,8 @@ import {
   SEM_CURVA_CALIBRACAO,
 } from "../../config/calibracaoConstants";
 import type { Equipamento, Elemento } from "../../types/calibracao";
+import type { Laudo } from "../../types/analise";
 import type { LinhaBancada } from "../../types/entradaLote";
-
-// ─── helpers ────────────────────────────────────────────────────────────────
 
 const STATUS_CHIP: Record<
   LinhaBancada["status"],
@@ -44,15 +45,22 @@ const STATUS_CHIP: Record<
   erro: { label: "Erro", color: "error" },
 };
 
-// ─── componente ─────────────────────────────────────────────────────────────
-
 export default function EntradaLotePage() {
   const {
+    laudoInput,
+    laudoSelecionado,
+    laudoOpcoes,
+    loadingLaudos,
+    handleLaudoInput,
+    handleLaudoChange,
     equipamento,
     handleSetEquipamento,
     elemento,
     handleSetElemento,
-    bateriaAtiva,
+    baterias,
+    loadingBaterias,
+    bateriaSelecionada,
+    setBateriaSelecionada,
     jaFiltrou,
     linhas,
     loadingAmostras,
@@ -72,8 +80,6 @@ export default function EntradaLotePage() {
   const exibirFator = equipamento
     ? REQUER_VOLUMES.includes(equipamento as Equipamento)
     : false;
-
-  // ─── colunas do DataGrid ──────────────────────────────────────────────────
 
   const columns = useMemo<GridColDef<LinhaBancada>[]>(() => [
     {
@@ -163,97 +169,41 @@ export default function EntradaLotePage() {
     },
   ], [exibirFator, leituraLabel, salvando]);
 
-  // ─── painel da curva ──────────────────────────────────────────────────────
-
   const renderPainelCurva = () => {
-    // Só exibe após o primeiro "Carregar"
-    if (!jaFiltrou) return null;
-
-    // Ainda não filtrou
-    if (!equipamento || !elemento) return null;
-
-    // Equipamentos sem curva nao exibem painel de calibracao
-    if (SEM_CURVA_CALIBRACAO.includes(equipamento as Equipamento)) return null;
-
-    // Carregando
+    if (!jaFiltrou || !bateriaSelecionada) return null;
+    if (SEM_CURVA_CALIBRACAO.includes(bateriaSelecionada.equipamento)) return null;
     if (loadingAmostras) return null;
 
-    // Curva ativa de outro elemento/equipamento (defensivo)
     if (
-      bateriaAtiva &&
-      (bateriaAtiva.equipamento !== equipamento ||
-        bateriaAtiva.elemento !== elemento)
-    ) {
-      return (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          A curva ativa não corresponde ao elemento selecionado. Ative a bateria
-          correta em <strong>Calibração</strong>.
-        </Alert>
-      );
-    }
-
-    // Sem bateria ativa
-    if (!bateriaAtiva) {
-      const equipamentoLabel =
-        EQUIPAMENTOS.find((e) => e.value === equipamento)?.label ??
-        "equipamento";
-      return (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {equipamento === "AA" ? (
-            <>Não há reta ativa na Absorção Atômica.</>
-          ) : (
-            <>
-              Nenhuma bateria ativa para{" "}
-              <strong>{ELEMENTO_LABEL[elemento as Elemento]}</strong> no{" "}
-              <strong>{equipamentoLabel}</strong>.
-            </>
-          )}{" "}
-          Acesse <strong>Calibração</strong> para ativar uma bateria.
-        </Alert>
-      );
-    }
-
-    // Bateria ativa sem curva calculada
-    if (
-      bateriaAtiva.coeficiente_angular_a === null ||
-      bateriaAtiva.coeficiente_linear_b === null
+      bateriaSelecionada.coeficiente_angular_a === null ||
+      bateriaSelecionada.coeficiente_linear_b === null
     ) {
       return (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          {equipamento === "AA" ? (
-            <>Não há reta ativa na Absorção Atômica.</>
-          ) : (
-            <>
-              Bateria ativa encontrada, mas a curva de calibração ainda não está
-              calculada.
-            </>
-          )}{" "}
-          Adicione pelo menos 2 pontos em <strong>Calibração</strong>.
+          Bateria selecionada ainda não tem curva calculada. Adicione pelo menos
+          2 pontos em <strong>Calibração</strong>.
         </Alert>
       );
     }
 
-    // Bateria com curva OK
     return (
       <Alert severity="info" sx={{ mb: 2 }}>
         <div>
-          <strong>Curva ativa:</strong> {bateriaAtiva.equacao_formada}
-          {bateriaAtiva.r_quadrado !== null && (
+          <strong>Curva:</strong> {bateriaSelecionada.equacao_formada}
+          {bateriaSelecionada.r_quadrado !== null && (
             <span style={{ marginLeft: 16 }}>
-              R² = {Number(bateriaAtiva.r_quadrado).toFixed(6)}
+              R² = {Number(bateriaSelecionada.r_quadrado).toFixed(6)}
             </span>
           )}
         </div>
         <div style={{ marginTop: 6 }}>
-          <strong>Branco:</strong> {bateriaAtiva.leitura_branco ?? "—"} |{" "}
-          <strong>V-solo:</strong> {bateriaAtiva.volume_solo ?? "—"} |{" "}
-          <strong>V-extrator:</strong> {bateriaAtiva.volume_extrator ?? "—"}
+          <strong>Branco:</strong> {bateriaSelecionada.leitura_branco ?? "—"} |{" "}
+          <strong>V-solo:</strong> {bateriaSelecionada.volume_solo ?? "—"} |{" "}
+          <strong>V-extrator:</strong> {bateriaSelecionada.volume_extrator ?? "—"}
         </div>
       </Alert>
     );
   };
-
-  // ─── render ───────────────────────────────────────────────────────────────
 
   return (
     <Box>
@@ -268,16 +218,50 @@ export default function EntradaLotePage() {
         spacing={2}
         mb={3}
         alignItems="flex-end"
+        flexWrap="wrap"
       >
+        <Autocomplete<Laudo>
+          options={laudoOpcoes}
+          value={laudoSelecionado}
+          inputValue={laudoInput}
+          onInputChange={handleLaudoInput}
+          onChange={handleLaudoChange}
+          loading={loadingLaudos}
+          noOptionsText={
+            laudoInput.length < 2
+              ? "Digite pelo menos 2 caracteres"
+              : "Nenhum laudo encontrado"
+          }
+          getOptionLabel={(option) => option.codigo_laudo}
+          isOptionEqualToValue={(option, value) => option.id === value.id}
+          sx={{ minWidth: 200 }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Laudo (opcional)"
+              size="small"
+              slotProps={{
+                input: {
+                  ...params.InputProps,
+                  endAdornment: (
+                    <>
+                      {loadingLaudos && <CircularProgress size={16} />}
+                      {params.InputProps.endAdornment}
+                    </>
+                  ),
+                },
+              }}
+            />
+          )}
+        />
+
         <FormControl size="small" sx={{ minWidth: 200 }}>
           <InputLabel id="eq-label">Equipamento</InputLabel>
           <Select
             labelId="eq-label"
             label="Equipamento"
             value={equipamento}
-            onChange={(e) => {
-              handleSetEquipamento(e.target.value as Equipamento);
-            }}
+            onChange={(e) => handleSetEquipamento(e.target.value as Equipamento)}
           >
             {EQUIPAMENTOS.map((eq) => (
               <MenuItem key={eq.value} value={eq.value}>
@@ -287,11 +271,7 @@ export default function EntradaLotePage() {
           </Select>
         </FormControl>
 
-        <FormControl
-          size="small"
-          sx={{ minWidth: 200 }}
-          disabled={!equipamento}
-        >
+        <FormControl size="small" sx={{ minWidth: 200 }} disabled={!equipamento}>
           <InputLabel id="el-label">Elemento</InputLabel>
           <Select
             labelId="el-label"
@@ -307,19 +287,52 @@ export default function EntradaLotePage() {
           </Select>
         </FormControl>
 
+        <FormControl
+          size="small"
+          sx={{ minWidth: 260 }}
+          disabled={!elemento || loadingBaterias}
+        >
+          <InputLabel id="bat-label">
+            {loadingBaterias ? "Carregando baterias…" : "Bateria / Calibração"}
+          </InputLabel>
+          <Select
+            labelId="bat-label"
+            label={loadingBaterias ? "Carregando baterias…" : "Bateria / Calibração"}
+            value={bateriaSelecionada?.id ?? ""}
+            onChange={(e) => {
+              const bat = baterias.find((b) => b.id === Number(e.target.value));
+              setBateriaSelecionada(bat ?? null);
+            }}
+          >
+            {baterias.length === 0 && !loadingBaterias && (
+              <MenuItem disabled value="">
+                Nenhuma bateria cadastrada
+              </MenuItem>
+            )}
+            {baterias.map((bat) => (
+              <MenuItem key={bat.id} value={bat.id}>
+                {new Date(bat.data_criacao).toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })}
+                {bat.leitura_branco !== null && ` — Branco: ${bat.leitura_branco}`}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
         <Button
           variant="contained"
-          disabled={!equipamento || !elemento || loadingAmostras}
+          disabled={!bateriaSelecionada || loadingAmostras}
           onClick={handleFiltrar}
         >
           Carregar
         </Button>
       </Stack>
 
-      {/* Painel da curva ativa */}
       {renderPainelCurva()}
 
-      {/* Tabela */}
       {(loadingAmostras || linhas.length > 0) && (
         <Box sx={{ width: "100%" }}>
           {loadingAmostras && <LinearProgress sx={{ mb: 1 }} />}
@@ -346,16 +359,25 @@ export default function EntradaLotePage() {
         </Box>
       )}
 
-      {/* Estado vazio: filtrou mas não há amostras pendentes */}
       {!loadingAmostras &&
-        equipamento &&
-        elemento &&
-        linhas.length === 0 &&
-        bateriaAtiva !== null && (
+        jaFiltrou &&
+        bateriaSelecionada &&
+        linhas.length === 0 && (
           <Alert severity="success">
-            Todas as amostras para{" "}
-            <strong>{ELEMENTO_LABEL[elemento as Elemento]}</strong> já foram
-            processadas nesta bateria.
+            {laudoSelecionado ? (
+              <>
+                Todas as amostras do laudo{" "}
+                <strong>{laudoSelecionado.codigo_laudo}</strong> para{" "}
+                <strong>{ELEMENTO_LABEL[elemento as Elemento]}</strong> já foram
+                processadas nesta bateria.
+              </>
+            ) : (
+              <>
+                Todas as amostras para{" "}
+                <strong>{ELEMENTO_LABEL[elemento as Elemento]}</strong> já foram
+                processadas nesta bateria.
+              </>
+            )}
           </Alert>
         )}
     </Box>

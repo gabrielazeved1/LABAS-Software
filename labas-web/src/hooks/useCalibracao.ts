@@ -7,11 +7,6 @@ import {
 import { useSnackbar } from "./useSnackbar";
 import type { Equipamento } from "../types/calibracao";
 
-/**
- * Gerencia a listagem de baterias de calibração com filtro por equipamento.
- * Após toggleAtivo, o backend altera o estado de múltiplas baterias,
- * então sempre fazemos refetch completo.
- */
 export function useCalibracao(equipamentoInicial?: Equipamento) {
   const { showError, showSuccess, showApiError } = useSnackbar();
   const [baterias, setBaterias] = useState<BateriaCalibracaoComPontos[]>([]);
@@ -23,7 +18,7 @@ export function useCalibracao(equipamentoInicial?: Equipamento) {
   const carregar = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
-      const data = await calibracaoService.listarBaterias(equipamentoFiltro, signal);
+      const data = await calibracaoService.listarBaterias(equipamentoFiltro, undefined, signal);
       setBaterias(data);
     } catch (err) {
       if ((err as { code?: string })?.code === "ERR_CANCELED") return;
@@ -48,23 +43,6 @@ export function useCalibracao(equipamentoInicial?: Equipamento) {
     [carregar, showSuccess],
   );
 
-  /**
-   * Marca a bateria como ativo=true (ou false).
-   * Sempre faz refetch pois o backend desativa as demais do mesmo elemento/equipamento.
-   */
-  const toggleAtivo = useCallback(
-    async (id: number, ativo: boolean) => {
-      try {
-        await calibracaoService.toggleAtivo(id, ativo);
-        showSuccess(ativo ? "Bateria ativada." : "Bateria desativada.");
-        await carregar();
-      } catch {
-        showError("Erro ao atualizar bateria.");
-      }
-    },
-    [carregar, showError, showSuccess],
-  );
-
   const removerBateria = useCallback(
     async (id: number) => {
       try {
@@ -84,7 +62,6 @@ export function useCalibracao(equipamentoInicial?: Equipamento) {
     equipamentoFiltro,
     setEquipamentoFiltro,
     criarBateria,
-    toggleAtivo,
     removerBateria,
     recarregar: carregar,
   };
