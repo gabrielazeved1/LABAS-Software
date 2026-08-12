@@ -383,6 +383,108 @@ class AnaliseSolo(models.Model):
         verbose_name_plural = "Analises de Solo"
 
 
+class ConjuntoPadrao(models.Model):
+    """
+    Agrupa as 4 linhas de referência (Padrão A/B e P.Labas A/B) sob um nome.
+    Apenas um conjunto pode estar ativo por vez — o ativo é usado como padrão
+    ao gerar PDFs sem especificar conjunto explicitamente.
+    """
+
+    nome = models.CharField(max_length=100, verbose_name="Nome do Conjunto")
+    ativo = models.BooleanField(default=False, verbose_name="Ativo")
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if self.ativo:
+            with transaction.atomic():
+                ConjuntoPadrao.objects.select_for_update().filter(ativo=True).exclude(
+                    pk=self.pk
+                ).update(ativo=False)
+                super().save(*args, **kwargs)
+        else:
+            super().save(*args, **kwargs)
+
+    def __str__(self):
+        status = " [ATIVO]" if self.ativo else ""
+        return f"{self.nome}{status}"
+
+    class Meta:
+        verbose_name = "Conjunto de Padroes"
+        verbose_name_plural = "Conjuntos de Padroes"
+        ordering = ["-criado_em"]
+
+
+class PadraoLaboratorio(models.Model):
+    """
+    Uma das 4 linhas de referência dentro de um ConjuntoPadrao.
+    Campos químicos são opcionais: None aparece como '*' no PDF gerado.
+    """
+
+    TIPO_CHOICES = [
+        ("padrao_a", "Padrão A"),
+        ("padrao_b", "Padrão B"),
+        ("p_labas_a", "P. Labas A"),
+        ("p_labas_b", "P. Labas B"),
+    ]
+    TIPO_ORDEM = ["padrao_a", "padrao_b", "p_labas_a", "p_labas_b"]
+
+    conjunto = models.ForeignKey(
+        ConjuntoPadrao, on_delete=models.CASCADE, related_name="padroes"
+    )
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, verbose_name="Tipo")
+
+    ph_agua = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True, verbose_name="pH agua")
+    ph_cacl2 = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True, verbose_name="pH CaCl2")
+    ph_kcl = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True, verbose_name="pH KCl")
+    p_m = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name="P_M (Mehlich)")
+    p_r = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name="P_R (Resina)")
+    p_rem = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name="P-rem")
+    mo = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, verbose_name="Materia Organica")
+    s = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name="Enxofre (S)")
+    b = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, verbose_name="Boro (B)")
+    k = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name="Potassio (K)")
+    na = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, verbose_name="Sodio (Na)")
+    ca = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name="Calcio (Ca)")
+    mg = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name="Magnesio (Mg)")
+    cu = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name="Cobre (Cu)")
+    fe = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name="Ferro (Fe)")
+    mn = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name="Manganes (Mn)")
+    zn = models.DecimalField(max_digits=12, decimal_places=4, null=True, blank=True, verbose_name="Zinco (Zn)")
+    al = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, verbose_name="Aluminio (Al3+)")
+    h_al = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, verbose_name="Acidez Potencial (H+Al)")
+    sb = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="SB")
+    t = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="t (CTC Efetiva)")
+    T_maiusculo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="T (CTC pH 7.0)")
+    V = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True, verbose_name="V%")
+    m = models.DecimalField(max_digits=6, decimal_places=1, null=True, blank=True, verbose_name="m%")
+    ca_mg = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, verbose_name="Ca/Mg")
+    ca_k = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, verbose_name="Ca/K")
+    mg_k = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, verbose_name="Mg/K")
+    c_org = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True, verbose_name="C-org")
+
+    @property
+    def n_lab(self):
+        return dict(self.TIPO_CHOICES)[self.tipo]
+
+    @property
+    def referencia(self):
+        return "*"
+
+    def __str__(self):
+        return f"{self.conjunto.nome} — {self.get_tipo_display()}"
+
+    class Meta:
+        verbose_name = "Padrao do Laboratorio"
+        verbose_name_plural = "Padroes do Laboratorio"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["conjunto", "tipo"], name="unique_tipo_por_conjunto"
+            )
+        ]
+        ordering = ["tipo"]
+
+
 class BateriaCalibracao(models.Model):
     """
     Representa a configuracao diaria dos equipamentos.

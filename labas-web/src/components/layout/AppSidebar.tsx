@@ -15,6 +15,7 @@ import PeopleIcon from "@mui/icons-material/People";
 import BiotechIcon from "@mui/icons-material/Biotech";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+import TuneIcon from "@mui/icons-material/Tune";
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -35,6 +36,7 @@ const navStaff = [
   { label: "Calibração", icon: <ScienceIcon />, to: "/calibracao" },
   { label: "Clientes", icon: <PeopleIcon />, to: "/clientes" },
   { label: "Usuários", icon: <ManageAccountsIcon />, to: "/usuarios" },
+  { label: "Padrões", icon: <TuneIcon />, to: "/padroes" },
 ];
 
 /**

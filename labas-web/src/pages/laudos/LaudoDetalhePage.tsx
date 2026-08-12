@@ -5,9 +5,16 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   Grid,
   IconButton,
+  List,
+  ListItemButton,
+  ListItemText,
   Paper,
   Stack,
   Tooltip,
@@ -23,10 +30,12 @@ import PageHeader from "../../components/shared/PageHeader";
 import LoadingOverlay from "../../components/shared/LoadingOverlay";
 import ConfirmDialog from "../../components/shared/ConfirmDialog";
 import { laudoService } from "../../services/laudoService";
+import { padraoService } from "../../services/padraoService";
 import { useAnalises } from "../../hooks/useAnalises";
 import { useSnackbar } from "../../hooks/useSnackbar";
 import { useAuth } from "../../hooks/useAuth";
 import type { Laudo, AnaliseSolo } from "../../types/analise";
+import type { ConjuntoPadrao } from "../../types/padroes";
 
 // ─── Componente ──────────────────────────────────────────────────────────────
 
@@ -41,6 +50,10 @@ export default function LaudoDetalhePage() {
   const [buscando, setBuscando] = useState(true);
   const [erroFetch, setErroFetch] = useState(false);
   const [baixando, setBaixando] = useState(false);
+  const [baixandoCompleto, setBaixandoCompleto] = useState(false);
+  const [dialogPadraoAberto, setDialogPadraoAberto] = useState(false);
+  const [conjuntos, setConjuntos] = useState<ConjuntoPadrao[]>([]);
+  const [conjuntoSelecionado, setConjuntoSelecionado] = useState<number | null>(null);
 
   const {
     analises,
@@ -162,24 +175,58 @@ export default function LaudoDetalhePage() {
     [isStaff, removendo],
   );
 
+  const baixarBlob = (blob: Blob, nome: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = nome;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleBaixarPdf = async () => {
     if (!laudo) return;
     setBaixando(true);
     try {
       const blob = await laudoService.baixarPdf(laudo.id);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `laudo-${laudo.codigo_laudo}.pdf`;
-      a.style.display = "none";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      baixarBlob(blob, `laudo-${laudo.codigo_laudo}.pdf`);
     } catch (err) {
       showApiError(err);
     } finally {
       setBaixando(false);
+    }
+  };
+
+  const handleAbrirDialogPadrao = async () => {
+    try {
+      const lista = await padraoService.listar();
+      setConjuntos(lista);
+      const ativo = lista.find((c) => c.ativo);
+      setConjuntoSelecionado(ativo?.id ?? lista[0]?.id ?? null);
+      if (lista.length === 1) {
+        void handleBaixarPdfCompleto(lista[0].id);
+        return;
+      }
+      setDialogPadraoAberto(true);
+    } catch (err) {
+      showApiError(err);
+    }
+  };
+
+  const handleBaixarPdfCompleto = async (conjuntoId?: number) => {
+    if (!laudo) return;
+    setDialogPadraoAberto(false);
+    setBaixandoCompleto(true);
+    try {
+      const blob = await laudoService.baixarPdfCompleto(laudo.id, conjuntoId);
+      baixarBlob(blob, `laudo-${laudo.codigo_laudo}-completo.pdf`);
+    } catch (err) {
+      showApiError(err);
+    } finally {
+      setBaixandoCompleto(false);
     }
   };
 
@@ -295,15 +342,28 @@ export default function LaudoDetalhePage() {
           Voltar
         </Button>
 
-        <Tooltip title="Baixar PDF com todas as análises ativas">
+        <Tooltip title="Baixar PDF somente com as análises deste laudo">
           <span>
             <Button
               variant="contained"
-              startIcon={<DownloadIcon />}
+              startIcon={baixando ? <CircularProgress size={18} color="inherit" /> : <DownloadIcon />}
               onClick={() => void handleBaixarPdf()}
-              disabled={baixando}
+              disabled={baixando || baixandoCompleto}
             >
-              {baixando ? "Gerando..." : "Gerar PDF"}
+              {baixando ? "Gerando..." : "PDF Análise"}
+            </Button>
+          </span>
+        </Tooltip>
+
+        <Tooltip title="Baixar PDF com linhas de referência (Padrão) + análises deste laudo">
+          <span>
+            <Button
+              variant="outlined"
+              startIcon={baixandoCompleto ? <CircularProgress size={18} color="inherit" /> : <DownloadIcon />}
+              onClick={() => void handleAbrirDialogPadrao()}
+              disabled={baixando || baixandoCompleto}
+            >
+              {baixandoCompleto ? "Gerando..." : "PDF Padrão + Análise"}
             </Button>
           </span>
         </Tooltip>
@@ -319,6 +379,42 @@ export default function LaudoDetalhePage() {
           </Button>
         )}
       </Stack>
+
+      {/* ── Dialog seleção de conjunto ─────────────────────────────────────── */}
+      <Dialog
+        open={dialogPadraoAberto}
+        onClose={() => setDialogPadraoAberto(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Selecionar conjunto de padrões</DialogTitle>
+        <DialogContent dividers sx={{ p: 0 }}>
+          <List disablePadding>
+            {conjuntos.map((c) => (
+              <ListItemButton
+                key={c.id}
+                selected={conjuntoSelecionado === c.id}
+                onClick={() => setConjuntoSelecionado(c.id)}
+              >
+                <ListItemText
+                  primary={c.nome}
+                  secondary={c.ativo ? "Ativo" : undefined}
+                />
+              </ListItemButton>
+            ))}
+          </List>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDialogPadraoAberto(false)}>Cancelar</Button>
+          <Button
+            variant="contained"
+            disabled={conjuntoSelecionado === null}
+            onClick={() => void handleBaixarPdfCompleto(conjuntoSelecionado ?? undefined)}
+          >
+            Gerar PDF
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <ConfirmDialog
         open={!!confirmarRemocao}

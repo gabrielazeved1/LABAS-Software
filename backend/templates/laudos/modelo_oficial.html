@@ -7,7 +7,9 @@
   </head>
 
   <body>
-    <!-- CABEÇALHO -->
+    {% for pagina in paginas %}
+
+    <!-- CABEÇALHO (repetido em cada página) -->
     <table class="header-table">
       <tr>
         <td class="logo-col">
@@ -33,7 +35,7 @@
       </tr>
     </table>
 
-    <!-- DADOS DO CLIENTE -->
+    <!-- DADOS DO CLIENTE (repetido em cada página) -->
     <table class="info-table">
       <tr>
         <td class="label-cell">Solicitante:</td>
@@ -77,8 +79,6 @@
     >
       RESULTADOS DE ANÁLISE QUÍMICA DE SOLO
     </div>
-
-    {% for pagina in paginas %}
 
     <!-- TABELA 1 -->
     <table class="results-table">
@@ -208,10 +208,6 @@
       </tbody>
     </table>
 
-    {% if not forloop.last %}
-    <div style="page-break-after: always"></div>
-    {% endif %} {% endfor %}
-
     <!-- RODAPÉ -->
     <div class="footer-section">
       <div class="footer-obs">
@@ -241,5 +237,11 @@
         </table>
       </div>
     </div>
+
+    {% if not forloop.last %}
+    <div style="page-break-after: always"></div>
+    {% endif %}
+
+    {% endfor %}
   </body>
 </html>

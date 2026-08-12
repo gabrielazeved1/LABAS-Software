@@ -102,7 +102,43 @@ urlpatterns = [
     path("tecnicos/", views.TecnicoListCreateView.as_view(), name="tecnicos_list_create"),
     path("tecnicos/<int:pk>/", views.TecnicoDestroyView.as_view(), name="tecnico_destroy"),
     # ---------------------------------------------------------
-    # 7 DASHBOARD DO TÉCNICO
+    # 7 CONJUNTOS DE PADROES (staff only)
+    # ---------------------------------------------------------
+    path(
+        "conjuntos-padrao/",
+        views.ConjuntoPadraoListCreateView.as_view(),
+        name="conjuntos_padrao_list_create",
+    ),
+    path(
+        "conjuntos-padrao/<int:pk>/",
+        views.ConjuntoPadraoDetailView.as_view(),
+        name="conjunto_padrao_detail",
+    ),
+    path(
+        "conjuntos-padrao/<int:pk>/ativar/",
+        views.ConjuntoPadraoAtivarView.as_view(),
+        name="conjunto_padrao_ativar",
+    ),
+    path(
+        "conjuntos-padrao/<int:pk>/desativar/",
+        views.ConjuntoPadraoDesativarView.as_view(),
+        name="conjunto_padrao_desativar",
+    ),
+    path(
+        "conjuntos-padrao/<int:pk>/pdf/",
+        views.gerar_conjunto_pdf,
+        name="conjunto_padrao_pdf",
+    ),
+    path(
+        "conjuntos-padrao/<int:conjunto_id>/padroes/<str:tipo>/",
+        views.PadraoLaboratorioUpdateView.as_view(),
+        name="padrao_laboratorio_update",
+    ),
+    # ---------------------------------------------------------
+    # 8 DASHBOARD DO TÉCNICO
+    # ---------------------------------------------------------
+    # ---------------------------------------------------------
+    # 9 DASHBOARD DO TÉCNICO
     # ---------------------------------------------------------
     path(
         "dashboard/stats/",

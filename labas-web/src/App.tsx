@@ -25,6 +25,7 @@ const LaudosPage = lazy(() => import("./pages/laudos/LaudosPage"));
 const ClientesPage = lazy(() => import("./pages/clientes/ClientesPage"));
 const ClienteFormPage = lazy(() => import("./pages/clientes/ClienteFormPage"));
 const UsuariosPage = lazy(() => import("./pages/usuarios/UsuariosPage"));
+const PadroesPage = lazy(() => import("./pages/padroes/PadroesPage"));
 const GuidePage = lazy(() => import("./pages/dashboard/GuidePage"));
 
 const Spinner = () => (
@@ -179,6 +180,16 @@ export default function App() {
             <AppShell>
               <Suspense fallback={<Spinner />}>
                 <UsuariosPage />
+              </Suspense>
+            </AppShell>
+          }
+        />
+        <Route
+          path="/padroes"
+          element={
+            <AppShell>
+              <Suspense fallback={<Spinner />}>
+                <PadroesPage />
               </Suspense>
             </AppShell>
           }

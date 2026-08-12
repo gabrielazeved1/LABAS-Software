@@ -23,14 +23,18 @@ from src.infrastructure.database.models import (
     AnaliseSolo,
     BateriaCalibracao,
     Cliente,
+    ConjuntoPadrao,
     Laudo,
     LeituraEquipamento,
+    PadraoLaboratorio,
     PontoCalibracao,
 )
 from .serializers import (
     AnaliseSoloSerializer,
     ClienteCadastroSerializer,
+    ConjuntoPadraoSerializer,
     LaudoSerializer,
+    PadraoLaboratorioSerializer,
     TecnicoSerializer,
     TecnicoCriarSerializer,
     BateriaCalibracaoSerializer,
@@ -240,6 +244,8 @@ class AnaliseSoloDetailView(generics.RetrieveUpdateDestroyAPIView):
 @authentication_classes([SessionAuthentication, JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def gerar_laudo_pdf(request, pk):
+    from types import SimpleNamespace
+
     laudo = get_object_or_404(Laudo.objects.select_related("cliente__usuario"), pk=pk)
 
     if not (request.user.is_staff or laudo.cliente.usuario == request.user):
@@ -248,22 +254,41 @@ def gerar_laudo_pdf(request, pk):
             status=status.HTTP_403_FORBIDDEN,
         )
 
-    # Filtra apenas analises ativas, limit 50, divide em paginas de 5
+    modo = request.query_params.get("modo", "analise")
     analises_ativas = list(laudo.analises.filter(ativo=True).order_by("n_lab")[:50])
-    paginas = [
-        analises_ativas[i : i + 5] for i in range(0, max(len(analises_ativas), 1), 5)
-    ]
 
-    context = {
-        "laudo": laudo,
-        "cliente": laudo.cliente,
-        "paginas": paginas,
-    }
+    if modo == "padrao_mais_analise":
+        conjunto_id = request.query_params.get("conjunto")
+        if conjunto_id:
+            conjunto = ConjuntoPadrao.objects.filter(pk=conjunto_id).first()
+            if not conjunto:
+                return Response(
+                    {"detail": "Conjunto de padroes nao encontrado."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            conjunto = ConjuntoPadrao.objects.filter(ativo=True).first()
+            if not conjunto:
+                return Response(
+                    {"detail": "Nenhum conjunto de padroes ativo. Ative um conjunto ou informe ?conjunto=<id>."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        linhas_padrao = _get_linhas_padrao(conjunto)
+        paginas_padrao = [linhas_padrao[i : i + 5] for i in range(0, max(len(linhas_padrao), 1), 5)]
+        paginas_analise = [analises_ativas[i : i + 5] for i in range(0, max(len(analises_ativas), 1), 5)]
+        paginas = paginas_padrao + paginas_analise
+        sufixo = "-completo"
+    else:
+        paginas = [analises_ativas[i : i + 5] for i in range(0, max(len(analises_ativas), 1), 5)]
+        sufixo = ""
 
-    html_string = render_to_string("laudos/modelo_oficial.html", context)
+    html_string = render_to_string(
+        "laudos/modelo_oficial.html",
+        {"laudo": laudo, "cliente": laudo.cliente, "paginas": paginas},
+    )
     pdf = HTML(string=html_string, base_url=request.build_absolute_uri("/")).write_pdf()
 
-    nome_arquivo = f"laudo_{laudo.codigo_laudo.replace('/', '-')}.pdf"
+    nome_arquivo = f"laudo_{laudo.codigo_laudo.replace('/', '-')}{sufixo}.pdf"
     response = HttpResponse(pdf, content_type="application/pdf")
     response["Content-Disposition"] = f'inline; filename="{nome_arquivo}"'
     return response
@@ -719,3 +744,167 @@ class EnviarLaudoEmailView(APIView):
                 {"detalhe": "Falha no servidor ao enviar o e-mail."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+
+
+# =============================================================================
+# 8 CONJUNTOS DE PADROES (staff only)
+# =============================================================================
+
+
+def _get_linhas_padrao(conjunto):
+    """Converte PadraoLaboratorio em SimpleNamespace compatível com o template."""
+    from types import SimpleNamespace
+
+    LABELS = dict(PadraoLaboratorio.TIPO_CHOICES)
+    padroes_map = {p.tipo: p for p in conjunto.padroes.all()}
+
+    def v(val):
+        return "*" if val is None else val
+
+    linhas = []
+    for tipo in PadraoLaboratorio.TIPO_ORDEM:
+        label = LABELS[tipo]
+        p = padroes_map.get(tipo)
+        if p:
+            linhas.append(SimpleNamespace(
+                n_lab=label, referencia="*",
+                ph_agua=v(p.ph_agua), ph_cacl2=v(p.ph_cacl2), ph_kcl=v(p.ph_kcl),
+                p_m=v(p.p_m), p_r=v(p.p_r), p_rem=v(p.p_rem),
+                k=v(p.k), na=v(p.na), s=v(p.s), b=v(p.b),
+                ca=v(p.ca), mg=v(p.mg), al=v(p.al), h_al=v(p.h_al),
+                cu=v(p.cu), fe=v(p.fe), mn=v(p.mn), zn=v(p.zn),
+                sb=v(p.sb), t=v(p.t), T_maiusculo=v(p.T_maiusculo),
+                V=v(p.V), m=v(p.m), mo=v(p.mo), c_org=v(p.c_org),
+                ca_mg=v(p.ca_mg), ca_k=v(p.ca_k), mg_k=v(p.mg_k),
+            ))
+        else:
+            linhas.append(SimpleNamespace(
+                n_lab=label, referencia="*",
+                ph_agua="*", ph_cacl2="*", ph_kcl="*",
+                p_m="*", p_r="*", p_rem="*", k="*", na="*", s="*", b="*",
+                ca="*", mg="*", al="*", h_al="*", cu="*", fe="*", mn="*", zn="*",
+                sb="*", t="*", T_maiusculo="*", V="*", m="*", mo="*", c_org="*",
+                ca_mg="*", ca_k="*", mg_k="*",
+            ))
+    return linhas
+
+
+class ConjuntoPadraoListCreateView(generics.ListCreateAPIView):
+    """
+    GET  /api/conjuntos-padrao/  → lista todos (autenticado)
+    POST /api/conjuntos-padrao/  → cria novo conjunto e suas 4 linhas vazias (staff)
+    """
+
+    serializer_class = ConjuntoPadraoSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = None
+
+    def get_queryset(self):
+        return ConjuntoPadrao.objects.prefetch_related("padroes").all()
+
+    def get_permissions(self):
+        if self.request.method == "POST":
+            return [IsAuthenticated(), IsStaff()]
+        return [IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        conjunto = serializer.save()
+        for tipo, _ in PadraoLaboratorio.TIPO_CHOICES:
+            PadraoLaboratorio.objects.create(conjunto=conjunto, tipo=tipo)
+
+
+class ConjuntoPadraoDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET    /api/conjuntos-padrao/<id>/  → detalhe (autenticado)
+    PUT    /api/conjuntos-padrao/<id>/  → edita nome (staff)
+    DELETE /api/conjuntos-padrao/<id>/  → remove se não for ativo (staff)
+    """
+
+    serializer_class = ConjuntoPadraoSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return ConjuntoPadrao.objects.prefetch_related("padroes").all()
+
+    def get_permissions(self):
+        if self.request.method in ("PUT", "PATCH", "DELETE"):
+            return [IsAuthenticated(), IsStaff()]
+        return [IsAuthenticated()]
+
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
+
+
+class ConjuntoPadraoAtivarView(APIView):
+    """POST /api/conjuntos-padrao/<id>/ativar/ — torna este conjunto o ativo (staff)."""
+
+    permission_classes = [IsAuthenticated, IsStaff]
+
+    def post(self, request, pk):
+        conjunto = get_object_or_404(ConjuntoPadrao, pk=pk)
+        conjunto.ativo = True
+        conjunto.save()
+        return Response(ConjuntoPadraoSerializer(conjunto).data, status=status.HTTP_200_OK)
+
+
+class ConjuntoPadraoDesativarView(APIView):
+    """POST /api/conjuntos-padrao/<id>/desativar/ — remove o status ativo (staff)."""
+
+    permission_classes = [IsAuthenticated, IsStaff]
+
+    def post(self, request, pk):
+        conjunto = get_object_or_404(ConjuntoPadrao, pk=pk)
+        conjunto.ativo = False
+        ConjuntoPadrao.objects.filter(pk=pk).update(ativo=False)
+        conjunto.refresh_from_db()
+        return Response(ConjuntoPadraoSerializer(conjunto).data, status=status.HTTP_200_OK)
+
+
+class PadraoLaboratorioUpdateView(generics.UpdateAPIView):
+    """PUT /api/conjuntos-padrao/<conjunto_id>/padroes/<tipo>/ — edita campos quimicos (staff)."""
+
+    serializer_class = PadraoLaboratorioSerializer
+    permission_classes = [IsAuthenticated, IsStaff]
+
+    def get_object(self):
+        return get_object_or_404(
+            PadraoLaboratorio,
+            conjunto_id=self.kwargs["conjunto_id"],
+            tipo=self.kwargs["tipo"],
+        )
+
+
+@api_view(["GET"])
+@authentication_classes([SessionAuthentication, JWTAuthentication])
+@permission_classes([IsAuthenticated, IsStaff])
+def gerar_conjunto_pdf(request, pk):
+    """GET /api/conjuntos-padrao/<id>/pdf/ — PDF standalone dos padrões (staff)."""
+    from types import SimpleNamespace
+    from datetime import date
+
+    conjunto = get_object_or_404(ConjuntoPadrao.objects.prefetch_related("padroes"), pk=pk)
+    linhas = _get_linhas_padrao(conjunto)
+    paginas = [linhas[i : i + 5] for i in range(0, max(len(linhas), 1), 5)]
+
+    mock_laudo = SimpleNamespace(
+        codigo_laudo="-",
+        data_emissao=date.today(),
+        observacoes=None,
+    )
+    mock_cliente = SimpleNamespace(
+        nome=conjunto.nome,
+        email="-",
+        area="-",
+        municipio="",
+    )
+
+    html_string = render_to_string(
+        "laudos/modelo_oficial.html",
+        {"laudo": mock_laudo, "cliente": mock_cliente, "paginas": paginas},
+    )
+    pdf = HTML(string=html_string, base_url=request.build_absolute_uri("/")).write_pdf()
+
+    nome_seguro = conjunto.nome.replace(" ", "-").replace("/", "-")
+    response = HttpResponse(pdf, content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="padroes-{nome_seguro}.pdf"'
+    return response

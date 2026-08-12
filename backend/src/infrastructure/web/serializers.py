@@ -5,11 +5,13 @@ from django.db import transaction, IntegrityError
 from django.contrib.auth.password_validation import validate_password
 from src.infrastructure.database.models import (
     Cliente,
+    ConjuntoPadrao,
     Laudo,
     AnaliseSolo,
     BateriaCalibracao,
     LeituraEquipamento,
     PontoCalibracao,
+    PadraoLaboratorio,
 )
 
 
@@ -234,6 +236,37 @@ class AnaliseSoloSerializer(serializers.ModelSerializer):
             "mg_k",
             "c_org",
         ]
+
+
+# =============================================================================
+# PADROES DO LABORATORIO
+# =============================================================================
+
+CAMPOS_QUIMICOS_PADRAO = [
+    "ph_agua", "ph_cacl2", "ph_kcl",
+    "p_m", "p_r", "p_rem", "mo", "s", "b",
+    "k", "na", "ca", "mg", "cu", "fe", "mn", "zn",
+    "al", "h_al", "sb", "t", "T_maiusculo", "V", "m",
+    "ca_mg", "ca_k", "mg_k", "c_org",
+]
+
+
+class PadraoLaboratorioSerializer(serializers.ModelSerializer):
+    tipo_display = serializers.CharField(source="get_tipo_display", read_only=True)
+
+    class Meta:
+        model = PadraoLaboratorio
+        fields = ["id", "tipo", "tipo_display"] + CAMPOS_QUIMICOS_PADRAO
+        read_only_fields = ["id", "tipo", "tipo_display"]
+
+
+class ConjuntoPadraoSerializer(serializers.ModelSerializer):
+    padroes = PadraoLaboratorioSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ConjuntoPadrao
+        fields = ["id", "nome", "ativo", "criado_em", "atualizado_em", "padroes"]
+        read_only_fields = ["id", "ativo", "criado_em", "atualizado_em"]
 
 
 # =============================================================================

@@ -45,7 +45,16 @@ export const laudoService = {
   },
 
   async baixarPdf(id: number): Promise<Blob> {
-    const { data } = await api.get(`${BASE}${id}/pdf/`, {
+    const { data } = await api.get(`${BASE}${id}/pdf/?modo=analise`, {
+      responseType: "blob",
+    });
+    return data as Blob;
+  },
+
+  async baixarPdfCompleto(id: number, conjuntoId?: number): Promise<Blob> {
+    const params = new URLSearchParams({ modo: "padrao_mais_analise" });
+    if (conjuntoId) params.append("conjunto", String(conjuntoId));
+    const { data } = await api.get(`${BASE}${id}/pdf/?${params.toString()}`, {
       responseType: "blob",
     });
     return data as Blob;
